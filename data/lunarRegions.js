@@ -209,11 +209,14 @@ export const FAMOUS_COORDINATES = [
 export const LUNAR_REGIONS = FAMOUS_COORDINATES;
 
 export const FLAG_TEMPLATES = [
-  { id: 'classic', name: 'Classic', color1: '#3b82f6', color2: '#1d4ed8', symbol: '🚀' },
-  { id: 'pioneer', name: 'Pioneer', color1: '#f59e0b', color2: '#d97706', symbol: '⭐' },
-  { id: 'colony', name: 'Colony', color1: '#22c55e', color2: '#15803d', symbol: '🌕' },
-  { id: 'explorer', name: 'Explorer', color1: '#8b5cf6', color2: '#6d28d9', symbol: '🌌' },
-  { id: 'crest', name: 'Crest', color1: '#e2e8f0', color2: '#94a3b8', symbol: '👑' }
+  { id: 'india', name: 'India', color1: '#ff9933', color2: '#138808', symbol: '🇮🇳' },
+  { id: 'usa', name: 'USA', color1: '#b22234', color2: '#3c3b6e', symbol: '🇺🇸' },
+  { id: 'japan', name: 'Japan', color1: '#ffffff', color2: '#bc002d', symbol: '🇯🇵' },
+  { id: 'eu', name: 'EU', color1: '#003399', color2: '#ffcc00', symbol: '🇪🇺' },
+  { id: 'un', name: 'UN', color1: '#5b92e5', color2: '#ffffff', symbol: '🌐' },
+  { id: 'uk', name: 'UK', color1: '#012169', color2: '#c8102e', symbol: '🇬🇧' },
+  { id: 'china', name: 'China', color1: '#ee1c25', color2: '#ffde00', symbol: '🇨🇳' },
+  { id: 'apollo', name: 'Pioneer', color1: '#1e3a8a', color2: '#d97706', symbol: '🚀' }
 ];
 
 export const INITIAL_CLAIMED_PLOTS = [
