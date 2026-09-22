@@ -229,22 +229,20 @@ export default function TelemetryBar({
                 />
               </div>
 
-              {/* Mini Flag Selector */}
+              {/* Country Flag Dropdown Selector */}
               <div className="flag-selector-row">
-                <span className="flag-row-label">Flag:</span>
-                <div className="flag-minis">
+                <span className="flag-row-label">Country / Flag:</span>
+                <select
+                  value={selectedFlagId}
+                  onChange={(e) => setSelectedFlagId(e.target.value)}
+                  className="tight-input country-select"
+                >
                   {FLAG_TEMPLATES.map((flag) => (
-                    <button
-                      key={flag.id}
-                      type="button"
-                      className={`mini-flag-btn ${selectedFlagId === flag.id ? 'active' : ''}`}
-                      onClick={() => setSelectedFlagId(flag.id)}
-                      title={flag.name}
-                    >
-                      {flag.symbol}
-                    </button>
+                    <option key={flag.id} value={flag.id} style={{ background: '#0f172a', color: '#ffffff' }}>
+                      {flag.symbol} {flag.name}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               {/* Price & Buy Now CTA */}
