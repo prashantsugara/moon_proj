@@ -269,9 +269,15 @@ export function generateDeedImage(plotData) {
     ctx.font = '600 16px "Courier New", monospace';
     ctx.fillStyle = '#64748b';
     ctx.fillText(`DATE OF ISSUANCE: ${new Date(plotData.claimedAt || Date.now()).toISOString().split('T')[0]}`, width - 140, footerY + 180);
-    ctx.fillText(`STATUS: OFFICIAL CERTIFIED DEED`, width - 140, footerY + 215);
+    ctx.fillText(`STATUS: OFFICIAL NOVELTY DEED`, width - 140, footerY + 215);
     ctx.fillStyle = '#b45309';
     ctx.fillText(`SECURITY TOKEN: REG-RSA-4096-VERIFIED`, width - 140, footerY + 250);
+
+    // Fine Print Legal Disclaimer Line
+    ctx.textAlign = 'center';
+    ctx.font = '500 12px "Georgia", serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('LEGAL NOTICE: COMMEMORATIVE NOVELTY DEED & PERSONAL REGISTRY CLAIM. RECORDED EXCLUSIVELY ON LUNA P2P LEDGER PURSUANT TO NOVELTY PROPERTY GIFT STANDARDS.', width / 2, height - 60);
 
     // Resolve Data URL
     resolve(canvas.toDataURL('image/png'));

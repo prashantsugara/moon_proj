@@ -97,6 +97,10 @@ export default function DeedCertificateModal({
             </button>
           </div>
         </div>
+
+        <div style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '12px', padding: '0 16px', lineHeight: 1.4 }}>
+          Legal Notice: Certificates issued by MoonLandBuy are commemorative novelty claims and digital collectibles recorded on the Luna P2P ledger. Under the 1967 UN Outer Space Treaty, celestial bodies are res communis and not subject to national or private legal real estate ownership.
+        </div>
       </div>
 
       <style>{`
