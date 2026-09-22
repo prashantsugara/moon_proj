@@ -8,6 +8,9 @@ import { MapPin, Radio, Grid } from 'lucide-react';
 import moonMapUrl from '../assets/moon_map.jpg';
 import earthMapUrl from '../assets/earth_map.jpg';
 
+const MOON_MAP_SRC = typeof moonMapUrl === 'object' && moonMapUrl?.src ? moonMapUrl.src : (moonMapUrl || '/moon_map.jpg');
+const EARTH_MAP_SRC = typeof earthMapUrl === 'object' && earthMapUrl?.src ? earthMapUrl.src : (earthMapUrl || '/earth_map.jpg');
+
 const MOON_RADIUS = 3.5;
 
 // Camera motion controller
@@ -48,7 +51,7 @@ function CameraController({ targetPosition }) {
 // Distant Real NASA Earth Sphere
 function EarthBackground() {
   const earthRef = useRef();
-  const earthTexture = useTexture(earthMapUrl);
+  const earthTexture = useTexture(EARTH_MAP_SRC);
   const { gl } = useThree();
 
   useEffect(() => {
@@ -121,7 +124,7 @@ function PhotorealisticMoonMesh({
   const { gl } = useThree();
 
   // Load NASA photo texture map
-  const moonTexture = useTexture(moonMapUrl);
+  const moonTexture = useTexture(MOON_MAP_SRC);
 
   // Generate procedural elevation bump map
   const bumpMap = useMemo(() => createProceduralBumpMap(), []);
