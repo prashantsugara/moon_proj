@@ -64,7 +64,6 @@ export default function P2PTransferHandshake({
     if (!error) {
       setIsSellerConfirmed(true);
 
-      // If micro platform fee is already verified, trigger instant title transfer
       if (isFeePaid) {
         await supabase
           .from('items')
@@ -131,28 +130,26 @@ export default function P2PTransferHandshake({
   };
 
   return (
-    <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-6 text-white max-w-lg shadow-xl">
-      <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-        <h3 className="text-lg font-bold text-slate-100">P2P Title Transfer Handshake</h3>
-        <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30">
-          Off-Platform P2P
-        </span>
+    <div className="handshake-card">
+      <div className="card-header">
+        <h3 className="card-title">P2P Title Transfer Handshake</h3>
+        <span className="p2p-badge">Off-Platform P2P</span>
       </div>
 
       {/* STEP 1: Direct P2P Payment */}
-      <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-lg space-y-3">
-        <div className="flex justify-between items-center text-xs font-semibold text-slate-400">
+      <div className="step-box">
+        <div className="step-label-row">
           <span>STEP 1: DIRECT P2P PAYMENT</span>
-          <span className="text-green-400 font-bold text-sm">₹{transfer.final_price}</span>
+          <span className="step-price-tag">₹{transfer.final_price}</span>
         </div>
 
-        <div className="bg-slate-900 p-3 rounded border border-slate-800 font-mono text-sm space-y-1">
-          <p className="text-xs text-slate-400">Seller Payment Detail (UPI ID):</p>
-          <div className="flex justify-between items-center text-slate-100 font-bold">
-            <span>{sellerUpi || 'seller@upi'}</span>
+        <div className="upi-display-box">
+          <span className="upi-label">Seller Payment Detail (UPI ID):</span>
+          <div className="upi-value-row">
+            <span>{sellerUpi || 'seller.luna@upi'}</span>
             <button
               onClick={() => navigator.clipboard.writeText(sellerUpi)}
-              className="text-xs text-blue-400 hover:underline"
+              className="copy-btn"
             >
               Copy
             </button>
@@ -163,14 +160,14 @@ export default function P2PTransferHandshake({
           <button
             onClick={handleNotifyPaid}
             disabled={isProcessing}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 py-2.5 rounded-lg font-semibold text-sm transition"
+            className="btn-action btn-blue"
           >
             {isProcessing ? 'Updating...' : 'I Have Paid (Notify Seller)'}
           </button>
         )}
 
         {isBuyerPaid && !isSellerConfirmed && (
-          <p className="text-xs text-amber-400 font-medium">
+          <p className="status-message status-amber">
             ✓ Buyer notified payment. Awaiting seller confirmation...
           </p>
         )}
@@ -179,7 +176,7 @@ export default function P2PTransferHandshake({
           <button
             onClick={handleConfirmReceipt}
             disabled={isProcessing}
-            className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 py-2.5 rounded-lg font-semibold text-sm transition"
+            className="btn-action btn-green"
           >
             {isProcessing ? 'Processing...' : 'Confirm Funds Received in Bank'}
           </button>
@@ -187,42 +184,42 @@ export default function P2PTransferHandshake({
       </div>
 
       {/* STEP 2: Micro Platform Transfer Fee */}
-      <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-lg space-y-3">
-        <div className="flex justify-between items-center text-xs font-semibold text-slate-400">
+      <div className="step-box">
+        <div className="step-label-row">
           <span>STEP 2: REGISTRY TRANSFER FEE</span>
-          <span className="text-slate-200 font-bold text-sm">₹{transfer.platform_fee}</span>
+          <span style={{ color: '#e2e8f0', fontWeight: 700 }}>₹{transfer.platform_fee}</span>
         </div>
 
         {!isFeePaid ? (
           <button
             onClick={handlePayPlatformFee}
             disabled={!isBuyerPaid || isProcessing}
-            className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 py-2.5 rounded-lg font-semibold text-sm transition"
+            className="btn-action btn-purple"
           >
             {isProcessing ? 'Opening Razorpay...' : 'Pay Platform Fee (Razorpay)'}
           </button>
         ) : (
-          <div className="text-xs text-green-400 font-semibold flex items-center gap-1.5">
-            <span>✓ Platform registry fee paid & verified</span>
+          <div className="status-message status-green">
+            ✓ Platform registry fee paid & verified
           </div>
         )}
       </div>
 
       {/* Final Completion State */}
       {isSellerConfirmed && isFeePaid && (
-        <div className="p-4 bg-green-950/60 border border-green-800 text-green-300 text-center rounded-lg font-semibold text-sm">
+        <div className="success-banner">
           🎉 Transfer Complete! Title officially recorded in Registry.
         </div>
       )}
 
       {/* Dispute Section */}
-      <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+      <div className="dispute-footer">
         {disputeFiled ? (
-          <span className="text-red-400 font-medium">⚠️ Dispute filed. Admin review pending.</span>
+          <span style={{ color: '#ef4444', fontWeight: 600 }}>⚠️ Dispute filed. Admin review pending.</span>
         ) : (
           <button
             onClick={() => setShowDisputeForm(!showDisputeForm)}
-            className="text-slate-400 hover:text-red-400 transition underline"
+            className="dispute-link"
           >
             Report Fraud / Non-payment Dispute
           </button>
@@ -230,19 +227,19 @@ export default function P2PTransferHandshake({
       </div>
 
       {showDisputeForm && (
-        <form onSubmit={handleFileDispute} className="space-y-2 pt-2">
+        <form onSubmit={handleFileDispute} className="dispute-form">
           <textarea
             placeholder="Describe the payment issue (e.g. Buyer clicked paid but no funds arrived)..."
             value={disputeReason}
             onChange={(e) => setDisputeReason(e.target.value)}
-            className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded text-xs text-white focus:outline-none focus:border-red-500"
+            className="dispute-textarea"
             rows={3}
             required
           />
           <button
             type="submit"
             disabled={isProcessing}
-            className="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-xs font-semibold transition"
+            className="btn-action btn-red"
           >
             Submit Dispute Report
           </button>

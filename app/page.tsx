@@ -17,10 +17,10 @@ export default function HomePage() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', fontFamily: 'sans-serif' }}>
-      <div style={{ maxWidth: '600px', width: '100%', textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>P2P Registry & Marketplace</h1>
-        <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
+    <main className="main-container">
+      <div className="hero-header">
+        <h1 className="hero-title">P2P Registry & Marketplace</h1>
+        <p className="hero-sub">
           Off-platform direct P2P payments with certified title registry transfer.
         </p>
       </div>
