@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "vertex": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@google-cloud/vertexai-mcp-server",
+        "--config",
+        "{\"projectId\":\"YOUR_GCP_PROJECT_ID\",\"location\":\"us-central1\"}"
+      ],
+      "env": {
+        "GCP_PROJECT_ID": "YOUR_GCP_PROJECT_ID",
+        "GCP_LOCATION": "us-central1",
+        "GOOGLE_APPLICATION_CREDENTIALS": "./gcp-key.json"
+      }
+    }
+  }
+}

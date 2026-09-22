@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CreditCard, Shield, Flag, CheckCircle2, Loader2, Award, Zap, Building } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { FLAG_TEMPLATES } from '../data/lunarRegions';
+import { useAuth } from '@/context/AuthContext';
 
 export default function PlotClaimModal({
   isOpen,
@@ -10,6 +11,7 @@ export default function PlotClaimModal({
   selectedRegion,
   onClaimSuccess
 }) {
+  const { user, profile } = useAuth();
   const [ownerName, setOwnerName] = useState('');
   const [plotTitle, setPlotTitle] = useState('');
   const [motto, setMotto] = useState('Per Aspera Ad Astra');
@@ -17,6 +19,15 @@ export default function PlotClaimModal({
   const [selectedFlagId, setSelectedFlagId] = useState('apollo');
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      const defaultName = profile?.full_name || user?.email?.split('@')[0] || '';
+      if (defaultName && !ownerName) {
+        setOwnerName(defaultName);
+      }
+    }
+  }, [isOpen, profile, user]);
 
   if (!isOpen || !coordinates) return null;
 

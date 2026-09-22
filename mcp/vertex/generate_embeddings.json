@@ -1,0 +1,19 @@
+{
+  "name": "vertex_generate_embeddings",
+  "description": "Generate 768-dimensional text embeddings using Vertex AI text-embedding-004 model.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "text": {
+        "type": "string",
+        "description": "Text content to generate vector embeddings for"
+      },
+      "taskType": {
+        "type": "string",
+        "enum": ["RETRIEVAL_QUERY", "RETRIEVAL_DOCUMENT", "SEMANTIC_SIMILARITY", "CLASSIFICATION"],
+        "default": "RETRIEVAL_DOCUMENT"
+      }
+    },
+    "required": ["text"]
+  }
+}

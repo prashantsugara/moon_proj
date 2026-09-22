@@ -10,6 +10,8 @@ import DeedCertificateModal from '@/components/DeedCertificateModal';
 import MyRegistryDrawer from '@/components/MyRegistryDrawer';
 import MarketplaceDrawer from '@/components/MarketplaceDrawer';
 import OwnershipTrailModal from '@/components/OwnershipTrailModal';
+import AuthModal from '@/components/AuthModal';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LUNAR_REGIONS, INITIAL_CLAIMED_PLOTS } from '@/data/lunarRegions';
 
 // Dynamic import for WebGL 3D Moon Globe
@@ -22,7 +24,9 @@ const MoonGlobe = dynamic(() => import('@/components/MoonGlobe'), {
   ),
 });
 
-export default function HomePage() {
+function HomeContent() {
+  const { user, profile } = useAuth();
+
   const [activeCoordinates, setActiveCoordinates] = useState({ lat: 0.674, lng: 23.473 });
   const [selectedRegion, setSelectedRegion] = useState(LUNAR_REGIONS[0]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,6 +37,9 @@ export default function HomePage() {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [isRegistryOpen, setIsRegistryOpen] = useState(false);
   const [isMarketplaceOpen, setIsMarketplaceOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'magiclink'>('signin');
+
   const [activeDeedPlot, setActiveDeedPlot] = useState<any>(null);
   const [activeTrailPlot, setActiveTrailPlot] = useState<any>(null);
 
@@ -72,6 +79,15 @@ export default function HomePage() {
     }
   };
 
+  const handleOpenClaimModal = () => {
+    if (!user) {
+      setAuthMode('signup');
+      setIsAuthOpen(true);
+      return;
+    }
+    setIsClaimModalOpen(true);
+  };
+
   const handleClaimSuccess = (newClaim: any) => {
     const claimWithHistory = {
       ...newClaim,
@@ -99,6 +115,11 @@ export default function HomePage() {
   };
 
   const handlePlaceBid = (plotId: string, newBid: any) => {
+    if (!user) {
+      setAuthMode('signin');
+      setIsAuthOpen(true);
+      return;
+    }
     setClaimedPlots((prev) =>
       prev.map((p) => {
         if (p.id === plotId) {
@@ -121,7 +142,14 @@ export default function HomePage() {
   };
 
   const handleBuyListedPlot = (plot: any) => {
-    const buyerName = prompt('Enter your buyer name for title transfer:', 'Explorer Agent');
+    if (!user) {
+      setAuthMode('signin');
+      setIsAuthOpen(true);
+      return;
+    }
+
+    const defaultBuyer = profile?.full_name || user.email?.split('@')[0] || 'Explorer Agent';
+    const buyerName = prompt('Enter buyer name for official title transfer:', defaultBuyer);
     if (!buyerName) return;
 
     setClaimedPlots((prev) =>
@@ -161,6 +189,10 @@ export default function HomePage() {
         onOpenMarketplace={() => setIsMarketplaceOpen(true)}
         showGrid={showGrid}
         onToggleGrid={() => setShowGrid((prev) => !prev)}
+        onOpenAuth={() => {
+          setAuthMode('signin');
+          setIsAuthOpen(true);
+        }}
       />
 
       <MoonGlobe
@@ -181,7 +213,7 @@ export default function HomePage() {
         onPlaceBid={handlePlaceBid}
         onOpenDeed={(plot: any) => setActiveDeedPlot(plot)}
         onOpenTrail={(plot: any) => setActiveTrailPlot(plot)}
-        onOpenClaimModal={() => setIsClaimModalOpen(true)}
+        onOpenClaimModal={handleOpenClaimModal}
       />
 
       <LandmarkSelector
@@ -261,6 +293,20 @@ export default function HomePage() {
         plotData={activeDeedPlot}
         onFocusPlot={(plot: any) => setActiveCoordinates({ lat: plot.lat, lng: plot.lng })}
       />
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        initialMode={authMode}
+      />
     </main>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <AuthProvider>
+      <HomeContent />
+    </AuthProvider>
   );
 }

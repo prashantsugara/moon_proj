@@ -1,0 +1,29 @@
+{
+  "name": "vertex_generate_content",
+  "description": "Generate text and multimodal content using Google Cloud Vertex AI Gemini models.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "model": {
+        "type": "string",
+        "description": "Model ID (e.g. gemini-1.5-pro, gemini-1.5-flash)",
+        "default": "gemini-1.5-flash"
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Input prompt for Vertex AI model"
+      },
+      "temperature": {
+        "type": "number",
+        "description": "Sampling temperature (0.0 to 1.0)",
+        "default": 0.2
+      },
+      "maxOutputTokens": {
+        "type": "integer",
+        "description": "Maximum tokens to generate",
+        "default": 2048
+      }
+    },
+    "required": ["prompt"]
+  }
+}
