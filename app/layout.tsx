@@ -1,8 +1,9 @@
 import React from 'react';
+import './globals.css';
 
 export const metadata = {
   title: 'P2P Registry & Marketplace',
-  description: 'Off-platform P2P land registry and marketplace platform.',
+  description: 'Off-platform direct P2P payments with certified title registry transfer.',
 };
 
 export default function RootLayout({
@@ -15,7 +16,7 @@ export default function RootLayout({
       <head>
         <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
       </head>
-      <body style={{ margin: 0, padding: 0, backgroundColor: '#090d16', color: '#fff' }}>
+      <body>
         {children}
       </body>
     </html>
