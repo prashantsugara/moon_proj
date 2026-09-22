@@ -236,7 +236,7 @@ export function generateDeedImage(plotData) {
     ctx.font = '600 18px "JetBrains Mono", monospace';
     ctx.fillStyle = '#64748b';
     ctx.fillText(`DATE OF ISSUANCE: ${new Date(plotData.claimedAt || Date.now()).toISOString().split('T')[0]}`, width - 140, footerY + 180);
-    ctx.fillText(`STATUS: VERIFIED ON BLOCKCHAIN`, width - 140, footerY + 215);
+    ctx.fillText(`STATUS: OFFICIAL CERTIFIED DEED`, width - 140, footerY + 215);
     ctx.fillStyle = '#00f3ff';
     ctx.fillText(`SECURITY TOKEN: ENCRYPTED-RSA-4096`, width - 140, footerY + 250);
 
@@ -254,4 +254,21 @@ export function downloadDeedPNG(plotData) {
     link.click();
     document.body.removeChild(link);
   });
+}
+
+export async function downloadDeedPDF(plotData) {
+  try {
+    const dataUrl = await generateDeedImage(plotData);
+    const { jsPDF } = await import('jspdf');
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'px',
+      format: [2048, 1448]
+    });
+    pdf.addImage(dataUrl, 'PNG', 0, 0, 2048, 1448);
+    pdf.save(`Lunar_Title_Deed_${plotData.id || 'Certificate'}.pdf`);
+  } catch (err) {
+    console.error('Failed to generate PDF:', err);
+    downloadDeedPNG(plotData);
+  }
 }

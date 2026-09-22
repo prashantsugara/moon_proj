@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, Share2, Globe, Check, Award, ShieldCheck } from 'lucide-react';
-import { generateDeedImage, downloadDeedPNG } from '../utils/deedGenerator';
+import { generateDeedImage, downloadDeedPNG, downloadDeedPDF } from '../utils/deedGenerator';
 
 export default function DeedCertificateModal({
   isOpen,
@@ -88,9 +88,12 @@ export default function DeedCertificateModal({
               <span>{copiedLink ? 'Link copied' : 'Share deed'}</span>
             </button>
 
-            <button className="btn-primary" onClick={() => downloadDeedPNG(plotData)}>
+            <button className="btn-primary" onClick={() => downloadDeedPDF(plotData)}>
               <Download size={15} />
-              <span>Download Deed (PNG)</span>
+              <span>Download Official PDF</span>
+            </button>
+            <button className="btn-ghost" onClick={() => downloadDeedPNG(plotData)}>
+              <span>PNG</span>
             </button>
           </div>
         </div>
