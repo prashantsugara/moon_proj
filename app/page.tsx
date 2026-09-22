@@ -224,6 +224,26 @@ export default function HomePage() {
           setIsMarketplaceOpen(false);
         }}
         onOpenTrail={(plot: any) => setActiveTrailPlot(plot)}
+        onListPlotForSale={(plotId: string, price: number) => {
+          setClaimedPlots((prev) =>
+            prev.map((p) => (p.id === plotId ? { ...p, forSale: true, listPrice: price } : p))
+          );
+        }}
+        onAcceptBid={(plotId: string, bid: any) => {
+          setClaimedPlots((prev) =>
+            prev.map((p) =>
+              p.id === plotId
+                ? {
+                    ...p,
+                    ownerName: bid.bidderName,
+                    forSale: false,
+                    listPrice: 0,
+                    bids: [],
+                  }
+                : p
+            )
+          );
+        }}
         onBuyListedPlot={handleBuyListedPlot}
       />
 
