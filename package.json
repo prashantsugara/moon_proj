@@ -1,26 +1,30 @@
 {
-  "name": "luna-registry",
+  "name": "p2p-luna-registry",
   "private": true,
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
-    "@react-three/drei": "^9.102.0",
-    "@react-three/fiber": "^8.16.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.45.0",
     "canvas-confetti": "^1.9.4",
     "lucide-react": "^0.359.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "three": "^0.163.0"
+    "next": "^14.2.15",
+    "razorpay": "^2.9.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.2.0"
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.4.5"
   }
 }
