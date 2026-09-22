@@ -122,6 +122,7 @@ function PhotorealisticMoonMesh({
 }) {
   const sphereRef = useRef();
   const { gl } = useThree();
+  const [hoveredRegionId, setHoveredRegionId] = useState(null);
 
   // Load NASA photo texture map
   const moonTexture = useTexture(MOON_MAP_SRC);
@@ -150,23 +151,23 @@ function PhotorealisticMoonMesh({
     }
   });
 
-  const handlePointerDown = (e) => {
+  // Click detector for custom coordinates
+  const handleSphereClick = (e) => {
     e.stopPropagation();
-    if (e.intersections && e.intersections.length > 0) {
-      const point = e.intersections[0].point;
-      const localPoint = point.clone();
-      if (sphereRef.current) {
-        localPoint.applyMatrix4(sphereRef.current.matrixWorld.clone().invert());
-      }
-      const coords = vector3ToLatLng(localPoint, MOON_RADIUS);
-      onSelectPoint(coords);
-    }
+    if (!e.point) return;
+
+    const latLng = vector3ToLatLng(e.point, MOON_RADIUS);
+    onSelectPoint({ lat: latLng.lat, lng: latLng.lng });
   };
 
   return (
     <group>
-      {/* Real NASA Moon Sphere */}
-      <mesh ref={sphereRef} onPointerDown={handlePointerDown}>
+      {/* 3D Moon Globe Surface */}
+      <mesh
+        ref={sphereRef}
+        onClick={handleSphereClick}
+        rotation={[0.1, 0.4, 0]}
+      >
         <sphereGeometry args={[MOON_RADIUS, 256, 256]} />
         <meshStandardMaterial
           map={moonTexture}
@@ -179,17 +180,29 @@ function PhotorealisticMoonMesh({
         {/* Claimed Plot Flag Markers */}
         {claimedPlots.map((plot) => {
           const pos = latLngToVector3(plot.lat, plot.lng, MOON_RADIUS, 0.05);
+          const isSelected = selectedRegion?.name === plot.regionName;
+          const isHovered = hoveredRegionId === plot.id;
           return (
-            <group key={plot.id} position={[pos.x, pos.y, pos.z]}>
-              <Html distanceFactor={10} zIndexRange={[100, 0]}>
-                <div className="claimed-flag-pin" title={`${plot.title} (${plot.ownerName})`}>
-                  <div className="flag-banner">
-                    <span className="flag-icon">{plot.flagSymbol || '🚩'}</span>
-                    <span className="flag-title">{plot.title}</span>
+            <group
+              key={plot.id}
+              position={[pos.x, pos.y, pos.z]}
+              onPointerOver={() => setHoveredRegionId(plot.id)}
+              onPointerOut={() => setHoveredRegionId(null)}
+            >
+              <mesh>
+                <sphereGeometry args={[0.04, 16, 16]} />
+                <meshBasicMaterial color="#3b82f6" />
+              </mesh>
+              {(isSelected || isHovered) && (
+                <Html distanceFactor={10} zIndexRange={[100, 0]}>
+                  <div className="claimed-flag-pin" title={`${plot.title} (${plot.ownerName})`}>
+                    <div className="flag-banner">
+                      <span className="flag-icon">{plot.flagSymbol || '🚩'}</span>
+                      <span className="flag-title">{plot.title}</span>
+                    </div>
                   </div>
-                  <div className="flag-pole"></div>
-                </div>
-              </Html>
+                </Html>
+              )}
             </group>
           );
         })}
@@ -198,24 +211,37 @@ function PhotorealisticMoonMesh({
         {presetRegions.map((region) => {
           const pos = latLngToVector3(region.lat, region.lng, MOON_RADIUS, 0.05);
           const isSelected = selectedRegion?.id === region.id;
+          const isHovered = hoveredRegionId === region.id;
           return (
-            <group key={region.id} position={[pos.x, pos.y, pos.z]}>
-              <mesh>
-                <sphereGeometry args={[0.06, 16, 16]} />
-                <meshBasicMaterial color="#ffffff" />
+            <group
+              key={region.id}
+              position={[pos.x, pos.y, pos.z]}
+              onPointerOver={() => setHoveredRegionId(region.id)}
+              onPointerOut={() => setHoveredRegionId(null)}
+            >
+              <mesh
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  onSelectPoint({ lat: region.lat, lng: region.lng, region });
+                }}
+              >
+                <sphereGeometry args={[isSelected ? 0.06 : 0.035, 16, 16]} />
+                <meshBasicMaterial color={isSelected ? '#60a5fa' : '#94a3b8'} />
               </mesh>
-              <Html distanceFactor={12} zIndexRange={[50, 0]}>
-                <button
-                  className={`region-beacon-tag ${isSelected ? 'active' : ''}`}
-                  onClick={(evt) => {
-                    evt.stopPropagation();
-                    onSelectPoint({ lat: region.lat, lng: region.lng, region });
-                  }}
-                >
-                  <Radio className="beacon-icon" size={14} />
-                  <span>{region.name}</span>
-                </button>
-              </Html>
+              {(isSelected || isHovered) && (
+                <Html distanceFactor={12} zIndexRange={[50, 0]}>
+                  <button
+                    className={`region-beacon-tag ${isSelected ? 'active' : ''}`}
+                    onClick={(evt) => {
+                      evt.stopPropagation();
+                      onSelectPoint({ lat: region.lat, lng: region.lng, region });
+                    }}
+                  >
+                    <Radio className="beacon-icon" size={14} />
+                    <span>{region.name}</span>
+                  </button>
+                </Html>
+              )}
             </group>
           );
         })}
