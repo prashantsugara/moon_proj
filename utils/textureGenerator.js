@@ -4,6 +4,7 @@ import * as THREE from 'three';
  * Photorealistic 4K Lunar Surface Texture Generator based on NASA LRO (Lunar Reconnaissance Orbiter) maps
  */
 export function createProceduralMoonTexture() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return null;
   const width = 4096;
   const height = 2048;
   const canvas = document.createElement('canvas');
@@ -181,6 +182,7 @@ export function createProceduralMoonTexture() {
  * Photorealistic Normal / Bump Elevation Map for realistic shadow depth on Moon surface
  */
 export function createProceduralBumpMap() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return null;
   const width = 2048;
   const height = 1024;
   const canvas = document.createElement('canvas');

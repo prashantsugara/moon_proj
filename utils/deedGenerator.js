@@ -1,4 +1,5 @@
 export function generateDeedImage(plotData) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return Promise.resolve('');
   return new Promise((resolve) => {
     const width = 2048;
     const height = 1448;
