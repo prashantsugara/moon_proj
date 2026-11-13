@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import React, { useState } from 'react';
 import { X, Lock, Mail, User as UserIcon, ArrowRight, Sparkles, CheckCircle2, AlertCircle, Loader2, Key } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +16,22 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [successMsg, setSuccessMsg] = useState('');
 
   if (!isOpen) return null;
+
+  const signInWithGoogle = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + '/' },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setErrorMsg(error.message || 'Google sign-in could not start.');
+      setLoading(false);
+    }
+  };
 
   const resetForm = () => {
     setErrorMsg('');
@@ -79,6 +96,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
             <X size={18} />
           </button>
         </div>
+
+        <button type="button" className="btn-secondary" style={{ width: '100%', marginBottom: 12 }}
+          disabled={loading} onClick={signInWithGoogle}>
+          Continue with Google
+        </button>
 
         <div className="auth-tabs">
           <button
