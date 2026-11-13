@@ -23,7 +23,7 @@ export async function createWhopCheckout(registrationId: string, requestUrl: str
     method: 'POST',
     body: JSON.stringify({
       mode: 'payment',
-      plan_id: plan,
+      variant_id: plan,
       redirect_url: new URL('/?registration=whop', requestUrl).href,
       metadata: { registration_id: registrationId },
     }),
