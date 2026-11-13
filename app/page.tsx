@@ -35,8 +35,8 @@ function toPlot(row: {
   return {
     id: row.id, accountId: row.account_id, ownerName: row.owner_name, title: row.title,
     lat: row.lat, lng: row.lng, sqft: row.sqft, acres: row.sqft / 43560,
-    motto: row.motto, flagId: flag.id, flagColor1: flag.color1, flagColor2: flag.color2,
-    flagSymbol: flag.symbol, claimedAt: row.created_at, txHash,
+    motto: row.motto, flagId: flag.id, flagImage: flag.image, flagName: flag.name,
+    claimedAt: row.created_at, txHash,
     totalPaid: 0, regionName: 'Lunar Surface',
   };
 }

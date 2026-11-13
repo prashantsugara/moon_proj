@@ -22,6 +22,7 @@ export default function PlotClaimModal({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [previewing, setPreviewing] = useState(!!initialDraft);
+  const [flagSearch, setFlagSearch] = useState('');
   const [preview, setPreview] = useState(null);
   useEffect(() => {
     if (!previewing || !isOpen || hidden) return;
@@ -55,6 +56,9 @@ export default function PlotClaimModal({
     { label: '1 acre (43,560 sq ft)', sqft: 43560 }
   ];
 
+  const query = flagSearch.trim().toLowerCase();
+  const matchingFlags = FLAG_TEMPLATES.filter((flag) =>
+    flag.name.toLowerCase().includes(query) || flag.code.toLowerCase() === query);
   const activePreset = SQFT_PRESETS.find((p) => p.sqft === sqftOption) || SQFT_PRESETS[1];
   const handleSubmitClaim = async (event) => {
     event.preventDefault();
@@ -158,9 +162,11 @@ export default function PlotClaimModal({
             </div>
 
             <div className="form-group">
-              <label>Flag</label>
-              <div className="flags-grid">
-                {FLAG_TEMPLATES.map((flag) => (
+              <label htmlFor="flag-search">Search flags</label>
+              <input id="flag-search" type="search" placeholder="Country, territory, or code"
+                value={flagSearch} onChange={(event) => setFlagSearch(event.target.value)} />
+              <div className="flags-grid" style={{ maxHeight: 230, overflowY: "auto" }}>
+                {matchingFlags.map((flag) => (
                   <button type="button" aria-pressed={selectedFlagId === flag.id}
                     key={flag.id}
                     className={`flag-item ${selectedFlagId === flag.id ? 'selected' : ''}`}
@@ -172,12 +178,13 @@ export default function PlotClaimModal({
                         background: flag.image ? "#101824" : `linear-gradient(135deg, ${flag.color1} 0%, ${flag.color2} 100%)`
                       }}
                     >
-                      {flag.image ? <img src={flag.image} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <span className="flag-symbol">{flag.symbol}</span>}
+                      {flag.image ? <img loading="lazy" src={flag.image} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <span className="flag-symbol">{flag.symbol}</span>}
                     </div>
                     <span className="flag-label">{flag.name}</span>
                   </button>
                 ))}
               </div>
+              {!matchingFlags.length && <p role="status">No flags match your search.</p>}
             </div>
           </div>}
 

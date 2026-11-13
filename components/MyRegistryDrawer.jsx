@@ -43,7 +43,7 @@ export default function MyRegistryDrawer({
                     <span className="claim-id">{plot.id}</span>
                     <h3 className="claim-title">{plot.title}</h3>
                   </div>
-                  <span className="flag-badge">{plot.flagSymbol || '🚩'}</span>
+                  <span className="flag-badge">{plot.flagImage ? <img src={plot.flagImage} alt={plot.flagName} width={30} /> : <span aria-label="Pioneer">🚀</span>}</span>
                 </div>
 
                 <div className="claim-meta">
