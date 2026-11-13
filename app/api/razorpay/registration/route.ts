@@ -1,4 +1,5 @@
 import { paymentAdmin } from '@/lib/paymentAdmin';
+import { createWhopCheckout, whopEnabled } from '@/lib/whop';
 import { paymentGateway } from '@/lib/razorpay';
 import { FLAG_TEMPLATES } from '@/data/lunarRegions';
 
@@ -46,6 +47,19 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Use the original certificate details for this reserved location.' }, { status: 409 });
     }
     let orderId = reservation.order_id;
+    if (whopEnabled() && !orderId) {
+      const checkout = await createWhopCheckout(reservation.id, request.url);
+      const { error: saveError } = await admin.from('lunar_registration_orders')
+        .update({ order_id: checkout.id }).eq('id', reservation.id).is('order_id', null);
+      if (saveError) throw saveError;
+      const { data: saved, error: reloadError } = await admin.from('lunar_registration_orders')
+        .select('order_id').eq('id', reservation.id).single();
+      if (reloadError || !saved?.order_id) throw reloadError ?? new Error('Checkout was not saved');
+      orderId = saved.order_id;
+    }
+    if (orderId?.startsWith('ch_')) {
+      return Response.json({ checkoutUrl: 'https://whop.com/checkout/' + orderId + '/' });
+    }
     if (!orderId) {
       const order = await paymentGateway().orders.create({ amount: 500, currency: 'USD', receipt: reservation.id });
       const { error: saveError } = await admin.from('lunar_registration_orders')

@@ -31,3 +31,7 @@ Auction bids and the seller payment are denominated in INR. The seller receives 
 ## Paid registration
 
 Set `REGISTRATION_CHECKOUT_ENABLED=true` in staging with Razorpay test credentials and USD checkout available. Registration is US$5. New auctions use a 2% platform fee, rounded to the nearest paise, with an INR 50 minimum opening bid. Existing issued orders keep their quoted fees. Reconcile abandoned registration orders with Razorpay before releasing their reserved coordinates.
+
+## Whop registration checkout
+
+For a preview deployment, set REGISTRATION_CHECKOUT_ENABLED=true and REGISTRATION_PAYMENT_PROVIDER=whop. Set WHOP_ACCOUNT_ID and WHOP_PLAN_ID to the matching Whop business and one-time USD 5 plan. Add WHOP_API_KEY with permission to create checkout configurations and retrieve payments. In Whop, subscribe the preview URL at /api/webhooks/whop to payment.succeeded and set WHOP_WEBHOOK_SECRET to the exact signing secret. Keep these secrets server-side. The existing paid_registration.sql migration supplies the finalization function. Test with matching credentials and webhook settings before enabling production. Previously issued Razorpay orders can still finish through the original checkout.

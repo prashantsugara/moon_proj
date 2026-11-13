@@ -92,7 +92,13 @@ function HomeContent() {
   }, []);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('plot');
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('registration') === 'whop') {
+      setIsRegistryOpen(true);
+      setPaymentMessage('Your certificate appears in My Land once payment is confirmed. Reopen My Land to refresh.');
+      try { sessionStorage.removeItem(draftKey); } catch {}
+    }
+    const id = params.get('plot');
     if (!id) return;
     if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) {
       setSharedClaimError(true);
@@ -200,6 +206,10 @@ function HomeContent() {
     });
     const order = await response.json();
     if (!response.ok) throw new Error(order.error || 'Checkout is unavailable.');
+    if (order.checkoutUrl) {
+      window.location.assign(order.checkoutUrl);
+      return;
+    }
     await openCheckout(order, 'Commemorative lunar certificate', () => {
       discardDraft();
       setIsClaimModalOpen(false);
