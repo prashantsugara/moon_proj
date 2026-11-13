@@ -1,17 +1,17 @@
 # MoonLandBuy
 
-MoonLandBuy is a free commemorative lunar registry with a 3D globe, account-based registrations, and shareable certificates. Registrations confer no legal rights to lunar land.
+MoonLandBuy is a paid commemorative lunar registry with a 3D globe, account-based registrations, and shareable certificates. Registrations confer no legal rights to lunar land.
 
 ## Setup
 
-1. Provision Supabase. On a fresh database, run `supabase_setup.sql` followed by `registry_launch.sql`. On an existing installation of the base schema, apply only `registry_launch.sql`.
+1. Provision Supabase. On a fresh database, run `supabase_setup.sql` followed by `registry_launch.sql`. On an existing installation of the base schema, apply `registry_launch.sql` if it is missing. Apply `marketplace.sql` followed by `paid_registration.sql` before deploying the paid app.
 2. Copy `.env.example` to `.env.local` and enter the Supabase project URL and publishable or anon key. Set the same public values in the deployment environment before building.
 3. Configure Supabase Auth email confirmation, email delivery, site URL, and allowed redirect URLs for the deployment origin.
 4. Run `npm ci`, then `npm run build` and `npm start`.
 
 ## Release verification
 
-- In a staging project, confirm sign-up and sign-in, then register a claim. Refresh and check My Land.
+- In a staging project, confirm sign-up and sign-in, then complete a US$5 test payment and confirm the claim appears only after capture. Refresh and check My Land.
 - Open the shared certificate link in a signed-out browser. Sign in with a second account and verify it can view the public claim without seeing it in My Land.
 - Attempt to register the same location concurrently and confirm exactly one claim is created. Verify anonymous users cannot register and signed-in users can register only to their account.
 - Check certificate download and QR navigation on desktop and mobile. Confirm order creation returns 503 while checkout is disabled.
@@ -27,3 +27,7 @@ The public registry displays the chosen name, title, location, size, flag, and m
 5. Review pending disputes and reconcile them against buyer/seller receipts and Razorpay captures or refunds. An authorized operator can call `lunar_resolve_dispute` with `true` to transfer after capture or `false` to release the plot after reconciliation. Neither action moves or refunds money. The SQL migration grants resolution to service role only.
 
 Auction bids and the seller payment are denominated in INR. The seller receives the winning bid directly over UPI. Razorpay collects only the platform transfer fee. Leave production checkout and new listings disabled until the staging checks pass and an operator is assigned to handle disputes and refunds.
+
+## Paid registration
+
+Set `REGISTRATION_CHECKOUT_ENABLED=true` in staging with Razorpay test credentials and USD checkout available. Registration is US$5. New auctions use a 2% platform fee, rounded to the nearest paise, with an INR 50 minimum opening bid. Existing issued orders keep their quoted fees. Reconcile abandoned registration orders with Razorpay before releasing their reserved coordinates.

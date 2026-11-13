@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { openCheckout } from '@/lib/openCheckout';
 import Auctions from '@/components/Auctions';
 import HeaderNav from '@/components/HeaderNav';
 import TelemetryBar from '@/components/TelemetryBar';
@@ -48,7 +49,7 @@ type ClaimDraft = {
 const draftKey = 'moonlandbuy.certificate-draft';
 
 function HomeContent() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const [activeCoordinates, setActiveCoordinates] = useState({ lat: 0.674, lng: 23.473 });
   const [selectedRegion, setSelectedRegion] = useState(LUNAR_REGIONS[0]);
@@ -71,6 +72,7 @@ function HomeContent() {
   const [claimedPlots, setClaimedPlots] = useState<ReturnType<typeof toPlot>[]>([]);
   const [marketOpen, setMarketOpen] = useState(false);
   const [listingPlot, setListingPlot] = useState<string | undefined>();
+  const [paymentMessage, setPaymentMessage] = useState("");
   const [registryError, setRegistryError] = useState(false);
   const [sharedClaimError, setSharedClaimError] = useState(false);
   const myPlots = claimedPlots.filter((plot) => plot.accountId === user?.id);
@@ -191,23 +193,19 @@ function HomeContent() {
       setIsAuthOpen(true);
       return;
     }
-    const lat = Math.round(claim.coordinates.lat * 100) / 100;
-    const roundedLng = Math.round(claim.coordinates.lng * 100) / 100;
-    const lng = Math.abs(lat) === 90 ? 0 : roundedLng === 180 ? -180 : roundedLng;
-    const { data, error } = await supabase.from('lunar_claims').insert({
-      account_id: user.id, owner_name: claim.ownerName, title: claim.title,
-      lat, lng, sqft: claim.sqft, motto: claim.motto, flag_id: claim.flagId,
-    }).select().single();
-    if (error) {
-      throw new Error(error.code === '23505'
-        ? 'That location is already registered.'
-        : 'Registration could not be saved. Please try again.');
-    }
-    const plot = toPlot(data);
-    setClaimedPlots((current) => [plot, ...current.filter((item) => item.id !== plot.id)]);
-    setIsClaimModalOpen(false);
-    discardDraft();
-    setActiveDeedPlot(plot);
+    const response = await fetch('/api/razorpay/registration', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + session?.access_token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(claim),
+    });
+    const order = await response.json();
+    if (!response.ok) throw new Error(order.error || 'Checkout is unavailable.');
+    await openCheckout(order, 'Commemorative lunar certificate', () => {
+      discardDraft();
+      setIsClaimModalOpen(false);
+      setPaymentMessage('Payment submitted. Your certificate appears in My Land after Razorpay confirms it.');
+      void refreshClaims().catch(() => {});
+    });
   };
 
   return (
@@ -218,11 +216,12 @@ function HomeContent() {
       {sharedClaimError && !registryError && <p role="alert" style={{ position: 'absolute', top: 80, left: 16, zIndex: 20 }}>
         The shared certificate could not be found.
       </p>}
+      {paymentMessage && <p role="status" className="glass-card" style={{ position: "absolute", top: 130, left: 16, zIndex: 30, padding: 12 }}>{paymentMessage}</p>}
       <HeaderNav
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
         claimedCount={myPlots.length}
-        onOpenRegistry={() => setIsRegistryOpen(true)}
+        onOpenRegistry={() => { setIsRegistryOpen(true); void refreshClaims().catch(() => {}); }}
         onOpenLandmarks={() => setIsLandmarksOpen(true)}
         showGrid={showGrid}
         onToggleGrid={() => setShowGrid((prev) => !prev)}
@@ -249,7 +248,7 @@ function HomeContent() {
 
       {!exploring && <section className="explore-intro" aria-labelledby="explore-title">
         <h1 id="explore-title">Pick a spot on the Moon.</h1>
-        <p>Create a free commemorative certificate for your chosen location.</p>
+        <p>Preview your commemorative certificate. Registration costs US$5.</p>
         <button className="btn-primary" type="button" onClick={() => setExploring(true)}>Explore the Moon</button>
       </section>}
       {exploring && <TelemetryBar

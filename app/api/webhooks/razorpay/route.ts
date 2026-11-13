@@ -15,10 +15,10 @@ export async function POST(request: Request) {
     if (event.event !== 'payment.captured') return Response.json({ received: true });
     const payment = event.payload?.payment?.entity;
     if (payment?.status !== 'captured' || typeof payment.order_id !== 'string' ||
-        typeof payment.id !== 'string' || !Number.isSafeInteger(payment.amount) || payment.currency !== 'INR') {
+        typeof payment.id !== 'string' || !Number.isSafeInteger(payment.amount) || !['INR', 'USD'].includes(payment.currency)) {
       return Response.json({}, { status: 400 });
     }
-    const { data, error } = await paymentAdmin().rpc('lunar_finalize_fee', {
+    const { data, error } = await paymentAdmin().rpc(payment.currency === 'USD' ? 'lunar_finalize_registration' : 'lunar_finalize_fee', {
       p_order: payment.order_id, p_payment: payment.id, p_amount: payment.amount, p_currency: payment.currency,
     });
     if (error) throw error;

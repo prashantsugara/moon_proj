@@ -1,5 +1,7 @@
 'use client';
 
+import { openCheckout } from '@/lib/openCheckout';
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -71,24 +73,8 @@ export default function Auctions({ plots, onClose, refreshClaims, initialPlot }:
     });
     const order = await response.json();
     if (!response.ok) throw new Error(order.error || 'Checkout is unavailable.');
-    const browser = window as Window & { Razorpay?: new (options: object) => { open(): void } };
-    if (!browser.Razorpay) {
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = () => resolve();
-        script.onerror = () => { script.remove(); reject(new Error('Checkout could not load.')); };
-        document.head.append(script);
-      });
-    }
-    const Razorpay = browser.Razorpay;
-    if (!Razorpay) throw new Error('Checkout could not load.');
-    new Razorpay({
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, order_id: order.id,
-      amount: order.amount, currency: order.currency, name: 'MoonLandBuy',
-      description: 'Commemorative registry transfer fee',
-      handler: () => setMessage('Payment submitted. The registry updates after Razorpay confirms it.'),
-    }).open();
+    await openCheckout(order, 'Commemorative registry transfer fee', () =>
+      setMessage('Payment submitted. The registry updates after Razorpay confirms it.'));
   }
 
   return (
@@ -98,7 +84,7 @@ export default function Auctions({ plots, onClose, refreshClaims, initialPlot }:
     }}>
       <button type="button" onClick={onClose} style={{ float: 'right' }}>Close</button>
       <h2>Marketplace</h2>
-      <p>Auctions transfer commemorative registry entries. Pay the seller directly after winning. The winner also pays a {money(4900)} platform fee.</p>
+      <p>Auctions transfer commemorative registry entries. Pay the seller directly after winning. The winner also pays a platform fee of 2% of the winning bid.</p>
       {message && <p role="status">{message}</p>}
       {!user && <p>Sign in to list a plot or place a bid.</p>}
       <fieldset disabled={busy} style={{ border: 0, minWidth: 0 }}>
@@ -112,7 +98,7 @@ export default function Auctions({ plots, onClose, refreshClaims, initialPlot }:
             <h3>List a plot</h3>
             <label>Plot <select name="plot" defaultValue={initialPlot} required>{plots.filter((plot) => plot.accountId === user.id)
               .map((plot) => <option key={plot.id} value={plot.id}>{plot.title}</option>)}</select></label>
-            <label>Opening price (INR) <input name="price" type="number" min="1" max="500000" step=".01" required /></label>
+            <label>Opening price (INR) <input name="price" type="number" min="50" max="500000" step=".01" required /></label>
             <label>Duration (hours) <input name="hours" type="number" min="1" max="168" defaultValue="24" required /></label>
             <label>UPI ID <input name="upi" maxLength={100} required /></label>
             <button type="submit">Create auction</button>

@@ -199,10 +199,10 @@ export default function PlotClaimModal({
               {isProcessing ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  <span>Registering...</span>
+                  <span>Opening checkout…</span>
                 </>
               ) : (
-                <span>{previewing ? (user ? "Save to My Land" : "Sign in to save to My Land") : "Preview certificate"}</span>
+                <span>{previewing ? (user ? "Pay US$5 and register" : "Sign in to continue") : "Preview certificate"}</span>
               )}
             </button>
           </div>
