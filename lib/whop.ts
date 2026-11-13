@@ -2,10 +2,15 @@ export function whopEnabled() {
   return process.env.REGISTRATION_PAYMENT_PROVIDER === 'whop';
 }
 
+export function whopSandbox() {
+  return process.env.WHOP_ENVIRONMENT === 'sandbox';
+}
+
 export async function whopRequest(path: string, options: RequestInit = {}) {
   const key = process.env.WHOP_API_KEY;
   if (!key) throw new Error('Whop API key is missing');
-  const response = await fetch('https://api.whop.com/api/v1/' + path, {
+  const host = whopSandbox() ? 'sandbox-api.whop.com' : 'api.whop.com';
+  const response = await fetch('https://' + host + '/api/v1/' + path, {
     ...options,
     cache: 'no-store',
     headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', ...options.headers },

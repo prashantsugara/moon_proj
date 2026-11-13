@@ -1,5 +1,5 @@
 import { paymentAdmin } from '@/lib/paymentAdmin';
-import { createWhopCheckout, whopEnabled } from '@/lib/whop';
+import { createWhopCheckout, whopEnabled, whopSandbox } from '@/lib/whop';
 import { paymentGateway } from '@/lib/razorpay';
 import { FLAG_TEMPLATES } from '@/data/lunarRegions';
 
@@ -58,7 +58,8 @@ export async function POST(request: Request) {
       orderId = saved.order_id;
     }
     if (orderId?.startsWith('ch_')) {
-      return Response.json({ checkoutUrl: 'https://whop.com/checkout/' + orderId + '/' });
+      const host = whopSandbox() ? 'sandbox.whop.com' : 'whop.com';
+      return Response.json({ checkoutUrl: 'https://' + host + '/checkout/' + orderId + '/' });
     }
     if (!orderId) {
       const order = await paymentGateway().orders.create({ amount: 500, currency: 'USD', receipt: reservation.id });
