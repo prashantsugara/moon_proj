@@ -1,3 +1,4 @@
+import { FLAG_TEMPLATES } from '../data/lunarRegions';
 import QRCode from 'qrcode';
 
 export function generateDeedImage(plotData) {
@@ -182,17 +183,25 @@ export function generateDeedImage(plotData) {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(1090, startY + 130, 320, 200);
 
-    // Flag Color Stripes
-    ctx.fillStyle = plotData.flagColor1 || '#ff9933';
-    ctx.fillRect(1092, startY + 132, 316, 96);
-    ctx.fillStyle = plotData.flagColor2 || '#138808';
-    ctx.fillRect(1092, startY + 228, 316, 100);
-
-    // Flag Symbol / Country Flag Emoji
-    ctx.font = '72px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(plotData.flagSymbol || '🇮🇳', 1090 + 160, startY + 255);
-    ctx.textAlign = 'left';
+    const flag = FLAG_TEMPLATES.find((item) => item.id === plotData.flagId)
+      ?? FLAG_TEMPLATES.find((item) => item.symbol === plotData.flagSymbol);
+    if (flag?.image) {
+      const image = new Image();
+      image.src = flag.image;
+      try {
+        await image.decode();
+        const scale = Math.min(316 / image.naturalWidth, 196 / image.naturalHeight);
+        const w = image.naturalWidth * scale;
+        const h = image.naturalHeight * scale;
+        ctx.drawImage(image, 1250 - w / 2, startY + 230 - h / 2, w, h);
+      } catch {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillText(flag.name, 1105, startY + 235);
+      }
+    } else {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(flag?.name ?? 'Lunar Registry', 1105, startY + 235);
+    }
 
     if (!plotData.draft) {
       // REAL SCANNABLE QR CODE GENERATION

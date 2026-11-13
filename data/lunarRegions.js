@@ -219,21 +219,21 @@ export const FAMOUS_COORDINATES = [
 export const LUNAR_REGIONS = FAMOUS_COORDINATES;
 
 export const FLAG_TEMPLATES = [
-  { id: 'india', name: 'India 🇮🇳', code: 'IN', symbol: '🇮🇳', color1: '#ff9933', color2: '#138808' },
-  { id: 'usa', name: 'United States 🇺🇸', code: 'US', symbol: '🇺🇸', color1: '#b22234', color2: '#3c3b6e' },
-  { id: 'uk', name: 'United Kingdom 🇬🇧', code: 'GB', symbol: '🇬🇧', color1: '#012169', color2: '#c8102e' },
-  { id: 'canada', name: 'Canada 🇨🇦', code: 'CA', symbol: '🇨🇦', color1: '#ff0000', color2: '#ffffff' },
-  { id: 'australia', name: 'Australia 🇦🇺', code: 'AU', symbol: '🇦🇺', color1: '#00008b', color2: '#ff0000' },
-  { id: 'germany', name: 'Germany 🇩🇪', code: 'DE', symbol: '🇩🇪', color1: '#000000', color2: '#dd0000' },
-  { id: 'france', name: 'France 🇫🇷', code: 'FR', symbol: '🇫🇷', color1: '#0055a5', color2: '#ef4135' },
-  { id: 'japan', name: 'Japan 🇯🇵', code: 'JP', symbol: '🇯🇵', color1: '#ffffff', color2: '#bc002d' },
-  { id: 'south_korea', name: 'South Korea 🇰🇷', code: 'KR', symbol: '🇰🇷', color1: '#ffffff', color2: '#cd2e3a' },
-  { id: 'brazil', name: 'Brazil 🇧🇷', code: 'BR', symbol: '🇧🇷', color1: '#009c3b', color2: '#ffdf00' },
-  { id: 'uae', name: 'United Arab Emirates 🇦🇪', code: 'AE', symbol: '🇦🇪', color1: '#ff0000', color2: '#00732f' },
-  { id: 'singapore', name: 'Singapore 🇸🇬', code: 'SG', symbol: '🇸🇬', color1: '#ed2939', color2: '#ffffff' },
-  { id: 'china', name: 'China 🇨🇳', code: 'CN', symbol: '🇨🇳', color1: '#ee1c25', color2: '#ffde00' },
-  { id: 'eu', name: 'European Union 🇪🇺', code: 'EU', symbol: '🇪🇺', color1: '#003399', color2: '#ffcc00' },
-  { id: 'un', name: 'United Nations 🌐', code: 'UN', symbol: '🌐', color1: '#5b92e5', color2: '#ffffff' },
+  { id: 'india', name: 'India', image: '/flags/in.png', code: 'IN', symbol: '🇮🇳', color1: '#ff9933', color2: '#138808' },
+  { id: 'usa', name: 'United States', image: '/flags/us.png', code: 'US', symbol: '🇺🇸', color1: '#b22234', color2: '#3c3b6e' },
+  { id: 'uk', name: 'United Kingdom', image: '/flags/gb.png', code: 'GB', symbol: '🇬🇧', color1: '#012169', color2: '#c8102e' },
+  { id: 'canada', name: 'Canada', image: '/flags/ca.png', code: 'CA', symbol: '🇨🇦', color1: '#ff0000', color2: '#ffffff' },
+  { id: 'australia', name: 'Australia', image: '/flags/au.png', code: 'AU', symbol: '🇦🇺', color1: '#00008b', color2: '#ff0000' },
+  { id: 'germany', name: 'Germany', image: '/flags/de.png', code: 'DE', symbol: '🇩🇪', color1: '#000000', color2: '#dd0000' },
+  { id: 'france', name: 'France', image: '/flags/fr.png', code: 'FR', symbol: '🇫🇷', color1: '#0055a5', color2: '#ef4135' },
+  { id: 'japan', name: 'Japan', image: '/flags/jp.png', code: 'JP', symbol: '🇯🇵', color1: '#ffffff', color2: '#bc002d' },
+  { id: 'south_korea', name: 'South Korea', image: '/flags/kr.png', code: 'KR', symbol: '🇰🇷', color1: '#ffffff', color2: '#cd2e3a' },
+  { id: 'brazil', name: 'Brazil', image: '/flags/br.png', code: 'BR', symbol: '🇧🇷', color1: '#009c3b', color2: '#ffdf00' },
+  { id: 'uae', name: 'United Arab Emirates', image: '/flags/ae.png', code: 'AE', symbol: '🇦🇪', color1: '#ff0000', color2: '#00732f' },
+  { id: 'singapore', name: 'Singapore', image: '/flags/sg.png', code: 'SG', symbol: '🇸🇬', color1: '#ed2939', color2: '#ffffff' },
+  { id: 'china', name: 'China', image: '/flags/cn.png', code: 'CN', symbol: '🇨🇳', color1: '#ee1c25', color2: '#ffde00' },
+  { id: 'eu', name: 'European Union', image: '/flags/eu.png', code: 'EU', symbol: '🇪🇺', color1: '#003399', color2: '#ffcc00' },
+  { id: 'un', name: 'United Nations', image: '/flags/un.png', code: 'UN', symbol: '🌐', color1: '#5b92e5', color2: '#ffffff' },
   { id: 'apollo', name: 'Pioneer 🚀', code: 'AP', symbol: '🚀', color1: '#1e3a8a', color2: '#d97706' }
 ];
 

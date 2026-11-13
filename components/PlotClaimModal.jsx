@@ -31,7 +31,7 @@ export default function PlotClaimModal({
     generateDeedImage({
       ...coordinates, title: plotTitle, ownerName, motto, sqft: sqftOption,
       acres: sqftOption / 43560, flagColor1: flag.color1, flagColor2: flag.color2,
-      flagSymbol: flag.symbol, regionName: 'Lunar Surface', draft: true,
+      flagSymbol: flag.symbol, flagId: flag.id, regionName: 'Lunar Surface', draft: true,
     }).then((image) => { if (current) setPreview(image); })
       .catch(() => { if (current) setErrorMessage('The image preview could not be generated.'); });
     return () => { current = false; };
@@ -161,7 +161,7 @@ export default function PlotClaimModal({
               <label>Flag</label>
               <div className="flags-grid">
                 {FLAG_TEMPLATES.map((flag) => (
-                  <div
+                  <button type="button" aria-pressed={selectedFlagId === flag.id}
                     key={flag.id}
                     className={`flag-item ${selectedFlagId === flag.id ? 'selected' : ''}`}
                     onClick={() => setSelectedFlagId(flag.id)}
@@ -169,13 +169,13 @@ export default function PlotClaimModal({
                     <div
                       className="flag-preview-box"
                       style={{
-                        background: `linear-gradient(135deg, ${flag.color1} 0%, ${flag.color2} 100%)`
+                        background: flag.image ? "#101824" : `linear-gradient(135deg, ${flag.color1} 0%, ${flag.color2} 100%)`
                       }}
                     >
-                      <span className="flag-symbol">{flag.symbol}</span>
+                      {flag.image ? <img src={flag.image} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <span className="flag-symbol">{flag.symbol}</span>}
                     </div>
                     <span className="flag-label">{flag.name}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
