@@ -71,14 +71,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin + '/' },
     });
     return { error };
   };
 
   const signInWithMagicLink = async (email: string) => {
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + '/' } });
       if (error) return { error };
       return { error: null };
     } catch (err: any) {
