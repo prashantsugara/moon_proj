@@ -268,3 +268,88 @@ body {
   background-color: var(--accent-red);
   color: #ffffff;
 }
+
+/* Explorer controls */
+:root {
+  color-scheme: dark;
+  --font-sans: Inter, "Segoe UI", sans-serif;
+  --accent: #bbddff;
+  --accent-soft: #1d354d;
+  --bg-card: #101824;
+  --bg-elevated: #182332;
+  --border-subtle: #2d3d50;
+  --border-active: #7798b8;
+  --text-muted: #a4b4c7;
+  --green: #80deb1;
+  --green-soft: #16362b;
+  --red: #ff9b9b;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+}
+
+button, input, select, textarea { font: inherit; }
+button:not(:disabled) { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.glass-card {
+  background: #101824f5;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+}
+.btn-primary, .btn-secondary, .btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 7px 13px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: #182433;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+.btn-ghost { background: transparent; }
+.btn-primary { background: var(--accent); color: #0c1b2b; border-color: transparent; }
+.btn-primary:hover:not(:disabled) { background: #d6ebff; }
+.btn-secondary:hover:not(:disabled), .btn-ghost:hover:not(:disabled) { background: #26374a; }
+.btn-primary:disabled, .btn-secondary:disabled, .btn-ghost:disabled { opacity: .55; }
+
+.location-card {
+  position: absolute;
+  z-index: 45;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  left: clamp(16px, 5vw, 80px);
+  width: min(340px, calc(100% - 32px));
+  padding: 18px;
+  box-shadow: 0 16px 40px #0005;
+}
+.location-card h2 { margin: 7px 0 14px; font-size: 22px; line-height: 1.15; }
+.location-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
+.location-coordinates { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.location-card button { width: 100%; margin-top: 5px; }
+@media (max-width: 600px) {
+  .location-card { left: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100% - 24px); padding: 13px; }
+  .location-card h2 { font-size: 18px; margin-bottom: 7px; }
+}
+
+@media (max-width: 700px) {
+  .header-console.glass-card {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 9px;
+  }
+  .header-console .header-center { order: 3; flex: 0 0 100%; max-width: none; margin: 0; }
+  .header-console .header-right { flex-wrap: wrap; gap: 4px; }
+  .header-console .header-right button { padding-inline: 7px; min-height: 32px; }
+}

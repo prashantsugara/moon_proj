@@ -37,7 +37,7 @@ export default function DeedCertificateModal({
               <Award size={22} />
             </div>
             <div>
-              <h2>Official Lunar Title Deed</h2>
+              <h2>Commemorative Lunar Certificate</h2>
               <span className="deed-id-sub">Registry ID: {plotData.id}</span>
             </div>
           </div>
@@ -71,7 +71,7 @@ export default function DeedCertificateModal({
             </span>
             <span className="info-badge">
               <span className="info-label">Area:</span>
-              <span className="info-val">{plotData.acres} Acre(s)</span>
+              <span className="info-val">{plotData.sqft.toLocaleString()} sq ft</span>
             </span>
           </div>
 
@@ -90,7 +90,7 @@ export default function DeedCertificateModal({
 
             <button className="btn-primary" onClick={() => downloadDeedPDF(plotData)}>
               <Download size={15} />
-              <span>Download Official PDF</span>
+              <span>Download PDF</span>
             </button>
             <button className="btn-ghost" onClick={() => downloadDeedPNG(plotData)}>
               <span>PNG</span>
@@ -99,7 +99,7 @@ export default function DeedCertificateModal({
         </div>
 
         <div style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '12px', padding: '0 16px', lineHeight: 1.4 }}>
-          Legal Notice: Certificates issued by MoonLandBuy are commemorative novelty claims and digital collectibles recorded on the Luna P2P ledger. Under the 1967 UN Outer Space Treaty, celestial bodies are res communis and not subject to national or private legal real estate ownership.
+          This commemorative certificate confers no legal rights to lunar land.
         </div>
       </div>
 

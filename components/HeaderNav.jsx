@@ -8,7 +8,6 @@ export default function HeaderNav({
   claimedCount,
   onOpenRegistry,
   onOpenLandmarks,
-  onOpenMarketplace,
   showGrid,
   onToggleGrid,
   onOpenAuth,
@@ -35,7 +34,7 @@ export default function HeaderNav({
       <div className="header-left">
         <div className="brand-logo">
           <Globe size={18} className="brand-icon" />
-          <span className="brand-title">Moonlandbuy</span>
+          <span className="brand-title">MoonLandBuy</span>
         </div>
       </div>
 
@@ -63,12 +62,7 @@ export default function HeaderNav({
 
         <button className="btn-ghost" onClick={onOpenLandmarks}>
           <Compass size={15} />
-          <span>Sites</span>
-        </button>
-
-        <button className="btn-ghost" onClick={onOpenMarketplace}>
-          <ShoppingBag size={15} />
-          <span>Market</span>
+          <span>Landmarks</span>
         </button>
 
         <button className="btn-primary" onClick={onOpenRegistry}>

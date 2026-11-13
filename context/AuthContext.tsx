@@ -41,169 +41,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper to fetch or create user profile
-  const fetchProfile = async (u: User) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', u.id)
-        .maybeSingle();
-
-      if (data) {
-        setProfile(data);
-      } else {
-        const fallbackName = u.user_metadata?.full_name || u.email?.split('@')[0] || 'Lunar Citizen';
-        const newProf = { id: u.id, full_name: fallbackName };
-        setProfile(newProf);
-      }
-    } catch {
-      const fallbackName = u.user_metadata?.full_name || u.email?.split('@')[0] || 'Lunar Citizen';
-      setProfile({ id: u.id, full_name: fallbackName });
-    }
-  };
-
   useEffect(() => {
-    let mounted = true;
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: initSession } }) => {
-      if (!mounted) return;
-      if (initSession) {
-        setSession(initSession);
-        setUser(initSession.user);
-        fetchProfile(initSession.user);
-      } else {
-        // Check local storage fallback for offline / mock testing
-        const storedUser = localStorage.getItem('luna_user_session');
-        if (storedUser) {
-          try {
-            const parsed = JSON.parse(storedUser);
-            setUser(parsed.user);
-            setProfile(parsed.profile);
-          } catch {}
-        }
-      }
-      setLoading(false);
-    }).catch(() => {
-      if (mounted) setLoading(false);
-    });
-
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      if (!mounted) return;
-      if (newSession) {
-        setSession(newSession);
-        setUser(newSession.user);
-        await fetchProfile(newSession.user);
-      } else {
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        localStorage.removeItem('luna_user_session');
-      }
+    const { data } = supabase.auth.onAuthStateChange((_event, current) => {
+      setSession(current);
+      setUser(current?.user ?? null);
       setLoading(false);
     });
-
-    return () => {
-      mounted = false;
-      authListener?.subscription?.unsubscribe();
-    };
+    return () => data.subscription.unsubscribe();
   }, []);
 
-  const signInWithEmail = async (email: string, pass: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: pass,
+  useEffect(() => {
+    setProfile(null);
+    if (!user) return;
+    let current = true;
+    const fallback = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Lunar Citizen';
+    supabase.from('profiles').select('id, full_name').eq('id', user.id).maybeSingle()
+      .then(({ data }) => {
+        if (current) setProfile(data ?? { id: user.id, full_name: fallback });
       });
+    return () => { current = false; };
+  }, [user]);
 
-      if (error) {
-        // Fallback demo login if keys are unconfigured placeholders
-        if (error.message.includes('apiKey') || error.message.includes('Invalid API key') || error.message.includes('JWTPromise')) {
-          const mockUser = {
-            id: `usr-${Date.now()}`,
-            email,
-            user_metadata: { full_name: email.split('@')[0] },
-          } as unknown as User;
-          const mockProf = { id: mockUser.id, full_name: email.split('@')[0] };
-
-          setUser(mockUser);
-          setProfile(mockProf);
-          localStorage.setItem('luna_user_session', JSON.stringify({ user: mockUser, profile: mockProf }));
-          return { error: null };
-        }
-        return { error };
-      }
-
-      if (data.user) {
-        setUser(data.user);
-        setSession(data.session);
-        await fetchProfile(data.user);
-      }
-      return { error: null };
-    } catch (err: any) {
-      // Fallback demo auth for mock testing
-      const mockUser = {
-        id: `usr-${Date.now()}`,
-        email,
-        user_metadata: { full_name: email.split('@')[0] },
-      } as unknown as User;
-      const mockProf = { id: mockUser.id, full_name: email.split('@')[0] };
-
-      setUser(mockUser);
-      setProfile(mockProf);
-      localStorage.setItem('luna_user_session', JSON.stringify({ user: mockUser, profile: mockProf }));
-      return { error: null };
-    }
+  const signInWithEmail = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
   };
 
-  const signUpWithEmail = async (email: string, pass: string, fullName: string) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: pass,
-        options: {
-          data: { full_name: fullName },
-        },
-      });
-
-      if (error) {
-        if (error.message.includes('apiKey') || error.message.includes('Invalid API key') || error.message.includes('JWTPromise')) {
-          const mockUser = {
-            id: `usr-${Date.now()}`,
-            email,
-            user_metadata: { full_name: fullName },
-          } as unknown as User;
-          const mockProf = { id: mockUser.id, full_name: fullName };
-
-          setUser(mockUser);
-          setProfile(mockProf);
-          localStorage.setItem('luna_user_session', JSON.stringify({ user: mockUser, profile: mockProf }));
-          return { error: null };
-        }
-        return { error };
-      }
-
-      if (data.user) {
-        setUser(data.user);
-        setSession(data.session);
-        setProfile({ id: data.user.id, full_name: fullName });
-      }
-      return { error: null };
-    } catch (err: any) {
-      const mockUser = {
-        id: `usr-${Date.now()}`,
-        email,
-        user_metadata: { full_name: fullName },
-      } as unknown as User;
-      const mockProf = { id: mockUser.id, full_name: fullName };
-
-      setUser(mockUser);
-      setProfile(mockProf);
-      localStorage.setItem('luna_user_session', JSON.stringify({ user: mockUser, profile: mockProf }));
-      return { error: null };
-    }
+  const signUpWithEmail = async (email: string, password: string, fullName: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    });
+    return { error };
   };
 
   const signInWithMagicLink = async (email: string) => {
@@ -223,7 +93,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setSession(null);
     setProfile(null);
-    localStorage.removeItem('luna_user_session');
   };
 
   const updateProfileName = (name: string) => {

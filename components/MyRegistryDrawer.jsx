@@ -7,7 +7,7 @@ export default function MyRegistryDrawer({
   claimedPlots,
   onSelectPlot,
   onOpenDeed,
-  onDeleteClaim
+  onListPlot
 }) {
   if (!isOpen) return null;
 
@@ -25,7 +25,7 @@ export default function MyRegistryDrawer({
         </div>
 
         <p className="drawer-sub">
-          Official ledger of all verified land titles under your ownership account.
+          Commemorative plots registered to your account.
         </p>
 
         {claimedPlots.length === 0 ? (
@@ -79,16 +79,7 @@ export default function MyRegistryDrawer({
                     <FileText size={14} />
                     <span>View Deed</span>
                   </button>
-
-                  {onDeleteClaim && (
-                    <button
-                      className="btn-ghost card-btn delete-btn"
-                      onClick={() => onDeleteClaim(plot.id)}
-                      title="Relinquish Claim"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
+                  {onListPlot && <button type="button" className="btn-ghost card-btn" onClick={() => onListPlot(plot.id)}>List this plot</button>}
                 </div>
               </div>
             ))}

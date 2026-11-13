@@ -71,7 +71,7 @@ export function generateDeedImage(plotData) {
     // Main Certificate Title
     ctx.font = '700 58px "Georgia", "Times New Roman", serif';
     ctx.fillStyle = '#0f172a';
-    ctx.fillText('CERTIFICATE OF TITLE', width / 2, 195);
+    ctx.fillText('COMMEMORATIVE CERTIFICATE', width / 2, 195);
 
     // Formal Gold Line Divider with Diamond Center
     ctx.beginPath();
@@ -129,13 +129,13 @@ export function generateDeedImage(plotData) {
     ctx.fillText('PARCEL SPECIFICATIONS & COORDINATES', 150, startY + 30);
 
     const specs = [
-      ['REGISTRY DEED ID', plotData.id || 'LUNA-2026-000'],
+      ['REGISTRY DEED ID', plotData.id || 'DRAFT'],
       ['SECTOR TITLE', plotData.title || 'Lunar Sector Alpha'],
       ['LUNAR REGION', plotData.regionName || 'Mare Tranquillitatis'],
       ['LATITUDE', `${plotData.lat > 0 ? plotData.lat + '° N' : Math.abs(plotData.lat) + '° S'}`],
       ['LONGITUDE', `${plotData.lng > 0 ? plotData.lng + '° E' : Math.abs(plotData.lng) + '° W'}`],
       ['AREA SIZE', `${plotData.acres || 1} Acre(s) (${((plotData.acres || 1) * 43560).toLocaleString()} sq ft)`],
-      ['REGISTRY HASH', plotData.txHash || 'REG-4918B2FA1099']
+      ['REGISTRY HASH', plotData.txHash || 'DRAFT']
     ];
 
     let rowY = startY + 92;
@@ -167,7 +167,7 @@ export function generateDeedImage(plotData) {
 
     ctx.font = '700 18px "Georgia", "Times New Roman", serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('NATIONAL EMBLEM & VERIFICATION QR', 1090, startY + 30);
+    ctx.fillText(plotData.draft ? 'CERTIFICATE PREVIEW' : 'NATIONAL EMBLEM & VERIFICATION QR', 1090, startY + 30);
 
     // Custom Motto
     ctx.font = 'italic 400 20px "Georgia", serif';
@@ -194,19 +194,20 @@ export function generateDeedImage(plotData) {
     ctx.fillText(plotData.flagSymbol || '🇮🇳', 1090 + 160, startY + 255);
     ctx.textAlign = 'left';
 
-    // REAL SCANNABLE QR CODE GENERATION
-    const verifyUrl = `https://moon-proj-bittruth.vercel.app/?plot=${plotData.id || 'DEED'}`;
-    const qrCanvas = document.createElement('canvas');
-    try {
-      await QRCode.toCanvas(qrCanvas, verifyUrl, {
-        width: 200,
-        margin: 1,
-        color: { dark: '#0f172a', light: '#ffffff' }
-      });
-      ctx.drawImage(qrCanvas, 1460, startY + 130, 200, 200);
-      ctx.strokeStyle = '#cbd5e1';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(1460, startY + 130, 200, 200);
+    if (!plotData.draft) {
+      // REAL SCANNABLE QR CODE GENERATION
+      const verifyUrl = `${window.location.origin}/?plot=${plotData.id || 'DEED'}`;
+      const qrCanvas = document.createElement('canvas');
+      try {
+        await QRCode.toCanvas(qrCanvas, verifyUrl, {
+          width: 200,
+          margin: 1,
+          color: { dark: '#0f172a', light: '#ffffff' }
+        });
+        ctx.drawImage(qrCanvas, 1460, startY + 130, 200, 200);
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(1460, startY + 130, 200, 200);
     } catch (e) {
       console.error('QR generation error:', e);
     }
@@ -214,6 +215,7 @@ export function generateDeedImage(plotData) {
     ctx.font = '600 13px "Courier New", monospace';
     ctx.fillStyle = '#64748b';
     ctx.fillText('SCAN QR TO VERIFY DEED', 1460, startY + 355);
+    }
 
     // 5. Official Gold Embossed Seal & Signatures Footer
     const footerY = 980;
@@ -241,11 +243,11 @@ export function generateDeedImage(plotData) {
     ctx.font = '700 13px "Georgia", serif';
     ctx.fillStyle = '#422006';
     ctx.textAlign = 'center';
-    ctx.fillText('★ OFFICIAL DEED SEAL ★', sealX, sealY - 25);
+    ctx.fillText('★ COMMEMORATIVE SEAL ★', sealX, sealY - 25);
     ctx.font = '700 32px sans-serif';
     ctx.fillText('🌕', sealX, sealY + 12);
     ctx.font = '700 12px "Georgia", serif';
-    ctx.fillText('LUNAR REGISTRY TITLE', sealX, sealY + 45);
+    ctx.fillText('LUNAR REGISTRY', sealX, sealY + 45);
 
     // Middle Signature Line
     ctx.textAlign = 'center';
@@ -269,7 +271,7 @@ export function generateDeedImage(plotData) {
     ctx.font = '600 16px "Courier New", monospace';
     ctx.fillStyle = '#64748b';
     ctx.fillText(`DATE OF ISSUANCE: ${new Date(plotData.claimedAt || Date.now()).toISOString().split('T')[0]}`, width - 140, footerY + 180);
-    ctx.fillText(`STATUS: OFFICIAL NOVELTY DEED`, width - 140, footerY + 215);
+    ctx.fillText(`STATUS: ${plotData.draft ? "UNSAVED PREVIEW" : "COMMEMORATIVE"}`, width - 140, footerY + 215);
     ctx.fillStyle = '#b45309';
     ctx.fillText(`SECURITY TOKEN: REG-RSA-4096-VERIFIED`, width - 140, footerY + 250);
 
@@ -277,7 +279,7 @@ export function generateDeedImage(plotData) {
     ctx.textAlign = 'center';
     ctx.font = '500 12px "Georgia", serif';
     ctx.fillStyle = '#94a3b8';
-    ctx.fillText('LEGAL NOTICE: COMMEMORATIVE NOVELTY DEED & PERSONAL REGISTRY CLAIM. RECORDED EXCLUSIVELY ON LUNA P2P LEDGER PURSUANT TO NOVELTY PROPERTY GIFT STANDARDS.', width / 2, height - 60);
+    ctx.fillText('COMMEMORATIVE CERTIFICATE ONLY. CONFERS NO LEGAL RIGHTS TO LUNAR LAND.', width / 2, height - 60);
 
     // Resolve Data URL
     resolve(canvas.toDataURL('image/png'));
@@ -305,7 +307,7 @@ export async function downloadDeedPDF(plotData) {
       format: [2048, 1448]
     });
     pdf.addImage(dataUrl, 'PNG', 0, 0, 2048, 1448);
-    pdf.save(`Official_Lunar_Deed_${plotData.id || 'Certificate'}.pdf`);
+    pdf.save(`Lunar_Certificate_${plotData.id || 'Certificate'}.pdf`);
   } catch (err) {
     console.error('Failed to generate PDF:', err);
     downloadDeedPNG(plotData);

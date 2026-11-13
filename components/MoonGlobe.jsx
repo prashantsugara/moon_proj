@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect, useMemo, Suspense } from 'react';
+import React, { useRef, useEffect, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, Stars, useTexture } from '@react-three/drei';
+import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { createProceduralBumpMap, latLngToVector3, vector3ToLatLng } from '../utils/textureGenerator';
-import { MapPin, Radio, Grid } from 'lucide-react';
 
 import moonMapUrl from '../assets/moon_map.jpg';
 import earthMapUrl from '../assets/earth_map.jpg';
@@ -15,12 +14,13 @@ const MOON_RADIUS = 3.5;
 
 // Camera motion controller
 function CameraController({ targetPosition }) {
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const controlsRef = useRef();
 
   useEffect(() => {
+    let frame;
     if (targetPosition) {
-      const pos = latLngToVector3(targetPosition.lat, targetPosition.lng, MOON_RADIUS, 3.2);
+      const pos = latLngToVector3(targetPosition.lat, targetPosition.lng, MOON_RADIUS, size.width < 700 ? 9.5 : 6.6);
       const startPos = camera.position.clone();
       let progress = 0;
 
@@ -29,12 +29,13 @@ function CameraController({ targetPosition }) {
         if (progress <= 1) {
           camera.position.lerpVectors(startPos, pos, progress);
           camera.lookAt(0, 0, 0);
-          requestAnimationFrame(animateCamera);
+          frame = requestAnimationFrame(animateCamera);
         }
       };
       animateCamera();
     }
-  }, [targetPosition, camera]);
+    return () => cancelAnimationFrame(frame);
+  }, [targetPosition, camera, size.width]);
 
   return (
     <OrbitControls
@@ -122,7 +123,6 @@ function PhotorealisticMoonMesh({
 }) {
   const sphereRef = useRef();
   const { gl } = useThree();
-  const [hoveredRegionId, setHoveredRegionId] = useState(null);
 
   // Load NASA photo texture map
   const moonTexture = useTexture(MOON_MAP_SRC);
@@ -180,29 +180,17 @@ function PhotorealisticMoonMesh({
         {/* Claimed Plot Flag Markers */}
         {claimedPlots.map((plot) => {
           const pos = latLngToVector3(plot.lat, plot.lng, MOON_RADIUS, 0.05);
-          const isSelected = selectedRegion?.name === plot.regionName;
-          const isHovered = hoveredRegionId === plot.id;
+
+
           return (
             <group
               key={plot.id}
               position={[pos.x, pos.y, pos.z]}
-              onPointerOver={() => setHoveredRegionId(plot.id)}
-              onPointerOut={() => setHoveredRegionId(null)}
             >
               <mesh>
                 <sphereGeometry args={[0.04, 16, 16]} />
                 <meshBasicMaterial color="#3b82f6" />
               </mesh>
-              {(isSelected || isHovered) && (
-                <Html distanceFactor={10} zIndexRange={[100, 0]}>
-                  <div className="claimed-flag-pin" title={`${plot.title} (${plot.ownerName})`}>
-                    <div className="flag-banner">
-                      <span className="flag-icon">{plot.flagSymbol || '🚩'}</span>
-                      <span className="flag-title">{plot.title}</span>
-                    </div>
-                  </div>
-                </Html>
-              )}
             </group>
           );
         })}
@@ -211,13 +199,11 @@ function PhotorealisticMoonMesh({
         {presetRegions.map((region) => {
           const pos = latLngToVector3(region.lat, region.lng, MOON_RADIUS, 0.05);
           const isSelected = selectedRegion?.id === region.id;
-          const isHovered = hoveredRegionId === region.id;
+
           return (
             <group
               key={region.id}
               position={[pos.x, pos.y, pos.z]}
-              onPointerOver={() => setHoveredRegionId(region.id)}
-              onPointerOut={() => setHoveredRegionId(null)}
             >
               <mesh
                 onClick={(evt) => {
@@ -228,20 +214,6 @@ function PhotorealisticMoonMesh({
                 <sphereGeometry args={[isSelected ? 0.06 : 0.035, 16, 16]} />
                 <meshBasicMaterial color={isSelected ? '#60a5fa' : '#94a3b8'} />
               </mesh>
-              {(isSelected || isHovered) && (
-                <Html distanceFactor={12} zIndexRange={[50, 0]}>
-                  <button
-                    className={`region-beacon-tag ${isSelected ? 'active' : ''}`}
-                    onClick={(evt) => {
-                      evt.stopPropagation();
-                      onSelectPoint({ lat: region.lat, lng: region.lng, region });
-                    }}
-                  >
-                    <Radio className="beacon-icon" size={14} />
-                    <span>{region.name}</span>
-                  </button>
-                </Html>
-              )}
             </group>
           );
         })}
@@ -253,15 +225,6 @@ function PhotorealisticMoonMesh({
               <sphereGeometry args={[0.08, 16, 16]} />
               <meshBasicMaterial color="#ffb700" />
             </mesh>
-            <Html distanceFactor={8} zIndexRange={[200, 0]}>
-              <div className="active-pin-callout">
-                <MapPin size={18} className="pin-icon" />
-                <div className="coords-text">
-                  {activeCoordinates.lat > 0 ? `${activeCoordinates.lat}°N` : `${Math.abs(activeCoordinates.lat)}°S`} | {' '}
-                  {activeCoordinates.lng > 0 ? `${activeCoordinates.lng}°E` : `${Math.abs(activeCoordinates.lng)}°W`}
-                </div>
-              </div>
-            </Html>
           </group>
         )}
       </mesh>
@@ -295,7 +258,7 @@ export default function MoonGlobe({
     <div className="moon-canvas-wrapper">
       <Canvas
         dpr={[1, 2]}
-        camera={{ position: [0, 0, 9], fov: 45 }}
+        camera={{ position: [0, 0, 11], fov: 45 }}
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
@@ -304,10 +267,10 @@ export default function MoonGlobe({
         }}
       >
         <ambientLight intensity={0.22} />
-        <directionalLight position={[16, 12, 14]} intensity={2.8} color="#ffffff" />
+        <directionalLight position={[16, 12, 14]} intensity={2.0} color="#ffffff" />
         <directionalLight position={[-16, -8, -10]} intensity={0.25} color="#38bdf8" />
         
-        <Stars radius={140} depth={60} count={6000} factor={4} saturation={0} fade speed={1} />
+        <Stars radius={140} depth={60} count={2200} factor={4} saturation={0} fade speed={1} />
         
         <Suspense fallback={null}>
           <EarthBackground />

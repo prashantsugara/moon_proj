@@ -54,10 +54,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
       if (error) {
         setErrorMsg(error.message || 'Error signing up.');
       } else {
-        setSuccessMsg('Account created successfully!');
-        setTimeout(() => {
-          onClose();
-        }, 1000);
+        setSuccessMsg('Account created. Check your inbox if email confirmation is required.');
       }
     } else if (mode === 'magiclink') {
       const { error } = await signInWithMagicLink(email);

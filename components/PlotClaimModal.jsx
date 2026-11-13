@@ -1,24 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, CreditCard, Shield, Flag, CheckCircle2, Loader2, Award, Zap, Building } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { X, Sparkles, Shield, Flag, CheckCircle2, Loader2, Award, Zap } from 'lucide-react';
 import { FLAG_TEMPLATES } from '../data/lunarRegions';
+import { generateDeedImage } from '../utils/deedGenerator';
 import { useAuth } from '@/context/AuthContext';
 
 export default function PlotClaimModal({
   isOpen,
   onClose,
   coordinates,
-  selectedRegion,
+  initialDraft,
+  hidden,
   onClaimSuccess
 }) {
-  const { user, profile } = useAuth();
-  const [ownerName, setOwnerName] = useState('');
-  const [plotTitle, setPlotTitle] = useState('');
-  const [motto, setMotto] = useState('Per Aspera Ad Astra');
-  const [sqftOption, setSqftOption] = useState(100);
-  const [selectedFlagId, setSelectedFlagId] = useState('apollo');
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const { user, profile, loading } = useAuth();
+  const [ownerName, setOwnerName] = useState(initialDraft?.ownerName ?? '');
+  const [plotTitle, setPlotTitle] = useState(initialDraft?.title ?? '');
+  const [motto, setMotto] = useState(initialDraft?.motto ?? '');
+  const [sqftOption, setSqftOption] = useState(initialDraft?.sqft ?? 100);
+  const [selectedFlagId, setSelectedFlagId] = useState(initialDraft?.flagId ?? 'apollo');
+  const [errorMessage, setErrorMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const [previewing, setPreviewing] = useState(!!initialDraft);
+  const [preview, setPreview] = useState(null);
+  useEffect(() => {
+    if (!previewing || !isOpen || hidden) return;
+    let current = true;
+    const flag = FLAG_TEMPLATES.find((item) => item.id === selectedFlagId) ?? FLAG_TEMPLATES[0];
+    setPreview(null);
+    generateDeedImage({
+      ...coordinates, title: plotTitle, ownerName, motto, sqft: sqftOption,
+      acres: sqftOption / 43560, flagColor1: flag.color1, flagColor2: flag.color2,
+      flagSymbol: flag.symbol, regionName: 'Lunar Surface', draft: true,
+    }).then((image) => { if (current) setPreview(image); })
+      .catch(() => { if (current) setErrorMessage('The image preview could not be generated.'); });
+    return () => { current = false; };
+  }, [previewing, isOpen, hidden, coordinates, plotTitle, ownerName, motto, sqftOption, selectedFlagId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -29,69 +46,48 @@ export default function PlotClaimModal({
     }
   }, [isOpen, profile, user]);
 
-  if (!isOpen || !coordinates) return null;
+  if (!isOpen || hidden || !coordinates) return null;
 
   const SQFT_PRESETS = [
-    { label: '1 sq ft', sqft: 1, price: 1.99, acres: 0.000023 },
-    { label: '100 sq ft', sqft: 100, price: 19.99, acres: 0.0023 },
-    { label: '1,000 sq ft', sqft: 1000, price: 149.00, acres: 0.023 },
-    { label: '1 acre (43,560 sq ft)', sqft: 43560, price: selectedRegion ? selectedRegion.pricePerAcre : 249.00, acres: 1 }
+    { label: '1 sq ft', sqft: 1 },
+    { label: '100 sq ft', sqft: 100 },
+    { label: '1,000 sq ft', sqft: 1000 },
+    { label: '1 acre (43,560 sq ft)', sqft: 43560 }
   ];
 
   const activePreset = SQFT_PRESETS.find((p) => p.sqft === sqftOption) || SQFT_PRESETS[1];
-  const regFee = 5.00;
-  const totalPrice = Number((activePreset.price + regFee).toFixed(2));
-  const activeFlag = FLAG_TEMPLATES.find((f) => f.id === selectedFlagId) || FLAG_TEMPLATES[0];
-
-  const handleSubmitClaim = (e) => {
-    e.preventDefault();
-    if (!ownerName.trim() || !plotTitle.trim()) return;
-
+  const handleSubmitClaim = async (event) => {
+    event.preventDefault();
+    if (isProcessing || !ownerName.trim() || !plotTitle.trim()) return;
+    setErrorMessage('');
+    if (!previewing) { setPreviewing(true); return; }
     setIsProcessing(true);
-
-    setTimeout(() => {
-      setIsProcessing(false);
-
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#3b82f6', '#60a5fa', '#ffffff', '#22c55e']
-      });
-
-      const newClaim = {
-        id: `SQFT-${Math.floor(10000 + Math.random() * 90000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+    try {
+      await onClaimSuccess({
         ownerName: ownerName.trim(),
         title: plotTitle.trim(),
-        lat: coordinates.lat,
-        lng: coordinates.lng,
         sqft: activePreset.sqft,
-        acres: activePreset.acres,
-        totalPaid: totalPrice,
-        regionName: selectedRegion ? selectedRegion.name : 'Custom Surface Sector',
-        motto: motto.trim() || 'Per Aspera Ad Astra',
-        flagId: activeFlag.id,
-        flagColor1: activeFlag.color1,
-        flagColor2: activeFlag.color2,
-        flagSymbol: activeFlag.symbol,
-        claimedAt: new Date().toISOString(),
-        txHash: `REG-${Math.random().toString(16).substring(2, 10).toUpperCase()}`
-      };
-
-      onClaimSuccess(newClaim);
-    }, 1600);
+        motto: motto.trim(),
+        flagId: selectedFlagId,
+        coordinates,
+      });
+    } catch (error) {
+      setErrorMessage(error.message || 'Registration failed.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={isProcessing ? undefined : onClose}>
       <div className="modal-container glass-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title">
             <Sparkles size={20} color="var(--accent)" />
             <div>
-              <h2>Register Land</h2>
+              <h2>{previewing ? 'Preview your certificate' : 'Personalize your certificate'}</h2>
               <span className="modal-sub">
-                Lat: {coordinates.lat}° · Lng: {coordinates.lng}° ({selectedRegion ? selectedRegion.name : 'Custom Surface Plot'})
+                Lat: {coordinates.lat}° · Lng: {coordinates.lng}°
               </span>
             </div>
           </div>
@@ -101,13 +97,18 @@ export default function PlotClaimModal({
         </div>
 
         <form onSubmit={handleSubmitClaim} className="modal-body">
-          <div className="form-column">
+          {previewing ? <div className="form-column">
+            {preview ? <img src={preview} alt="Your commemorative lunar certificate preview" style={{ width: '100%' }} />
+              : <p>{plotTitle} · {ownerName} · {sqftOption.toLocaleString()} sq ft</p>}
+            <button className="btn-ghost" type="button" disabled={isProcessing} onClick={() => setPreviewing(false)}>Edit details</button>
+          </div> : <div className="form-column">
             <div className="form-group">
-              <label>Your name</label>
+              <label htmlFor="claim-name">Display name</label>
               <input
                 type="text"
                 placeholder="e.g. Alex Mercer"
-                value={ownerName}
+                id="claim-name" value={ownerName}
+                maxLength={100}
                 onChange={(e) => setOwnerName(e.target.value)}
                 required
                 disabled={isProcessing}
@@ -115,11 +116,12 @@ export default function PlotClaimModal({
             </div>
 
             <div className="form-group">
-              <label>Plot name</label>
+              <label htmlFor="claim-title">Plot name</label>
               <input
                 type="text"
                 placeholder="e.g. Tranquility Base Alpha"
-                value={plotTitle}
+                id="claim-title" value={plotTitle}
+                maxLength={120}
                 onChange={(e) => setPlotTitle(e.target.value)}
                 required
                 disabled={isProcessing}
@@ -127,11 +129,12 @@ export default function PlotClaimModal({
             </div>
 
             <div className="form-group">
-              <label>Motto (optional)</label>
+              <label htmlFor="claim-motto">Motto (optional)</label>
               <input
                 type="text"
                 placeholder="e.g. Per Aspera Ad Astra"
-                value={motto}
+                id="claim-motto" value={motto}
+                maxLength={200}
                 onChange={(e) => setMotto(e.target.value)}
                 disabled={isProcessing}
               />
@@ -149,7 +152,6 @@ export default function PlotClaimModal({
                     disabled={isProcessing}
                   >
                     <span className="preset-label">{preset.label}</span>
-                    <span className="preset-price">${preset.price}</span>
                   </button>
                 ))}
               </div>
@@ -177,74 +179,23 @@ export default function PlotClaimModal({
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
 
           <div className="form-column summary-column">
-            <div className="summary-box">
-              <h3>Registration summary</h3>
-
-              <div className="summary-row">
-                <span>Location</span>
-                <span>{selectedRegion ? selectedRegion.name : 'Custom Surface Plot'}</span>
-              </div>
-              <div className="summary-row">
-                <span>Coordinates</span>
-                <span>{coordinates.lat}°, {coordinates.lng}°</span>
-              </div>
-              <div className="summary-row">
-                <span>Plot size</span>
-                <span>{activePreset.sqft.toLocaleString()} sq ft</span>
-              </div>
-              <div className="summary-row">
-                <span>Processing fee</span>
-                <span>${regFee.toFixed(2)}</span>
-              </div>
-
-              <div className="summary-divider" />
-
-              <div className="summary-row total-row">
-                <span>Total</span>
-                <span className="total-amount">${totalPrice.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Payment method</label>
-              <div className="payment-options">
-                <button
-                  type="button"
-                  className={`pay-btn ${paymentMethod === 'card' ? 'active' : ''}`}
-                  onClick={() => setPaymentMethod('card')}
-                  disabled={isProcessing}
-                >
-                  <CreditCard size={15} />
-                  <span>Credit card</span>
-                </button>
-                <button
-                  type="button"
-                  className={`pay-btn ${paymentMethod === 'paypal' ? 'active' : ''}`}
-                  onClick={() => setPaymentMethod('paypal')}
-                  disabled={isProcessing}
-                >
-                  <Building size={15} />
-                  <span>Instant pay</span>
-                </button>
-              </div>
-            </div>
-
+            {errorMessage && <p role="alert">{errorMessage}</p>}
             <div className="guarantee-badge">
               <Shield size={15} color="var(--accent)" />
-              <span>Official deed certified under Lunar Land Registry</span>
+              <span>This certificate is commemorative. Saving publishes your display name and plot details.</span>
             </div>
 
-            <button type="submit" className="btn-primary submit-claim-btn" disabled={isProcessing}>
+            <button type="submit" className="btn-primary submit-claim-btn" disabled={isProcessing || (previewing && loading)}>
               {isProcessing ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
                   <span>Registering...</span>
                 </>
               ) : (
-                <span>Confirm & Register (${totalPrice.toFixed(2)})</span>
+                <span>{previewing ? (user ? "Save to My Land" : "Sign in to save to My Land") : "Preview certificate"}</span>
               )}
             </button>
           </div>

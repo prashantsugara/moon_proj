@@ -1,190 +1,30 @@
-import React, { useState } from 'react';
-import { X, History, ArrowRight, ShieldCheck, Tag, DollarSign, Send, Check } from 'lucide-react';
+import { X, History } from 'lucide-react';
 
-export default function OwnershipTrailModal({
-  isOpen,
-  onClose,
-  plot,
-  onPlaceBid,
-  onBuyListedPlot
-}) {
-  const [bidderName, setBidderName] = useState('');
-  const [bidAmount, setBidAmount] = useState('');
-  const [bidSuccessMsg, setBidSuccessMsg] = useState(false);
-
+export default function OwnershipTrailModal({ isOpen, onClose, plot }) {
   if (!isOpen || !plot) return null;
-
-  const history = plot.history || [
-    {
-      event: 'MINTED',
-      from: 'Luna Land Authority',
-      to: plot.ownerName,
-      price: plot.totalPaid,
-      date: plot.claimedAt,
-      txHash: plot.txHash
-    }
-  ];
-
-  const bids = plot.bids || [];
-
-  const handleBidSubmit = (e) => {
-    e.preventDefault();
-    if (!bidderName.trim() || !bidAmount || Number(bidAmount) <= 0) return;
-
-    onPlaceBid(plot.id, {
-      id: `bid-${Date.now()}`,
-      bidderName: bidderName.trim(),
-      bidAmount: Number(bidAmount),
-      createdAt: new Date().toISOString()
-    });
-
-    setBidSuccessMsg(true);
-    setTimeout(() => {
-      setBidSuccessMsg(false);
-      setBidderName('');
-      setBidAmount('');
-    }, 2000);
-  };
 
   return (
     <div className="trail-modal-backdrop" onClick={onClose}>
-      <div className="trail-modal-container glass-card" onClick={(e) => e.stopPropagation()}>
+      <div className="trail-modal-container glass-card" role="dialog" aria-modal="true"
+        aria-label="Registration history" onClick={(event) => event.stopPropagation()}>
         <div className="trail-header">
           <div className="header-title-group">
-            <div className="header-icon-ring">
-              <History size={18} />
-            </div>
+            <History size={18} />
             <div>
-              <h2>Chain of Title & Ownership Trail</h2>
-              <span className="trail-plot-sub">{plot.title} • {plot.id}</span>
+              <h2>Registration history</h2>
+              <span className="trail-plot-sub">{plot.title}</span>
             </div>
           </div>
-          <button className="close-btn" onClick={onClose} aria-label="Close">
+          <button type="button" className="close-btn" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
-
-        <div className="trail-body">
-          {/* Left Column: Ownership Trail Timeline */}
-          <div className="trail-column">
-            <h3 className="section-title">Ownership History</h3>
-            <div className="timeline-wrapper">
-              {history.map((item, idx) => (
-                <div key={idx} className="timeline-item">
-                  <div className="timeline-dot" />
-                  <div className="timeline-content">
-                    <div className="event-top">
-                      <span className="event-type">{item.event.replace(/_/g, ' ')}</span>
-                      <span className="event-date">{new Date(item.date).toLocaleDateString()}</span>
-                    </div>
-
-                    <div className="event-transfer">
-                      <span className="owner-from">{item.from}</span>
-                      <ArrowRight size={13} className="transfer-arrow" />
-                      <span className="owner-to">{item.to}</span>
-                    </div>
-
-                    <div className="event-meta">
-                      <span className="price-tag">{item.price ? `$${item.price.toLocaleString()}` : 'N/A'}</span>
-                      <span className="hash-tag">TX: {item.txHash || '0x4918...'}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Column: Marketplace Bidding & Status */}
-          <div className="trail-column side-column">
-            <div className="current-status-box">
-              <h3 className="section-title">Parcel Status</h3>
-              <div className="status-row">
-                <span className="status-label">Current Owner</span>
-                <span className="status-value">{plot.ownerName}</span>
-              </div>
-              <div className="status-row">
-                <span className="status-label">Parcel Size</span>
-                <span className="status-value">{(plot.acres ? plot.acres * 43560 : plot.sqft || 100).toLocaleString()} sq ft</span>
-              </div>
-              <div className="status-row">
-                <span className="status-label">Listing Status</span>
-                {plot.forSale ? (
-                  <span className="badge-available">For Sale • ${plot.listPrice.toLocaleString()}</span>
-                ) : (
-                  <span className="status-value-muted">Not Listed</span>
-                )}
-              </div>
-
-              {plot.forSale && onBuyListedPlot && (
-                <button
-                  className="btn-primary buy-listed-btn"
-                  onClick={() => {
-                    onBuyListedPlot(plot);
-                    onClose();
-                  }}
-                >
-                  <Tag size={15} />
-                  <span>Buy Parcel (${plot.listPrice.toLocaleString()})</span>
-                </button>
-              )}
-            </div>
-
-            {/* Bids List & Place Bid Form */}
-            <div className="bidding-box">
-              <h3 className="section-title">Active Offers ({bids.length})</h3>
-              <div className="bids-scroll-list">
-                {bids.length === 0 ? (
-                  <p className="no-bids-text">No offers placed yet. Be the first to make an offer on this parcel.</p>
-                ) : (
-                  bids.map((b) => (
-                    <div key={b.id} className="bid-card">
-                      <div className="bid-top">
-                        <span className="bidder-name">{b.bidderName}</span>
-                        <span className="bid-amount">${b.bidAmount.toLocaleString()}</span>
-                      </div>
-                      <span className="bid-date">{new Date(b.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Form to submit offer */}
-              <form onSubmit={handleBidSubmit} className="place-bid-form">
-                <input
-                  type="text"
-                  placeholder="Your name or entity"
-                  value={bidderName}
-                  onChange={(e) => setBidderName(e.target.value)}
-                  className="bid-input"
-                  required
-                />
-                <div className="bid-input-row">
-                  <input
-                    type="number"
-                    placeholder="Offer amount ($)"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
-                    className="bid-input"
-                    required
-                  />
-                  <button type="submit" className="btn-primary submit-bid-btn">
-                    <Send size={13} />
-                    <span>Place Bid</span>
-                  </button>
-                </div>
-
-                {bidSuccessMsg && (
-                  <div className="bid-success-tag">
-                    <Check size={14} />
-                    <span>Offer submitted to owner</span>
-                  </div>
-                )}
-              </form>
-            </div>
-          </div>
+        <div className="trail-column">
+          <p>Registered to {plot.ownerName} on {new Date(plot.claimedAt).toLocaleDateString()}.</p>
+          <p>{plot.sqft.toLocaleString()} sq ft</p>
+          <p>Registration ID {plot.id}</p>
         </div>
       </div>
-
       <style>{`
         .trail-modal-backdrop {
           position: fixed;
