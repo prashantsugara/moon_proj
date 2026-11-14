@@ -1,4 +1,5 @@
 'use client';
+import { WhopCheckoutEmbed } from '@whop/checkout/react';
 import { REGISTRATION_PRICE } from '@/lib/registrationPrice';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -46,6 +47,7 @@ type ClaimDraft = {
   ownerName: string; title: string; sqft: number; motto: string; flagId: string;
   coordinates: { lat: number; lng: number };
 };
+const affiliateKey = 'moonlandbuy.whop-affiliate';
 const draftKey = 'moonlandbuy.certificate-draft';
 
 function HomeContent() {
@@ -72,10 +74,23 @@ function HomeContent() {
   const [claimedPlots, setClaimedPlots] = useState<ReturnType<typeof toPlot>[]>([]);
   const [marketOpen, setMarketOpen] = useState(false);
   const [listingPlot, setListingPlot] = useState<string | undefined>();
+  const [affiliate, setAffiliate] = useState<string>();
+  const [affiliateCheckout, setAffiliateCheckout] = useState<{ id: string; sandbox: boolean }>();
   const [paymentMessage, setPaymentMessage] = useState("");
   const [registryError, setRegistryError] = useState(false);
   const [sharedClaimError, setSharedClaimError] = useState(false);
   const myPlots = claimedPlots.filter((plot) => plot.accountId === user?.id);
+
+  useEffect(() => {
+    const incoming = new URLSearchParams(window.location.search).get('a');
+    const valid = (value: string | null) => value && /^[a-zA-Z0-9_.-]{1,100}$/.test(value);
+    if (valid(incoming)) setAffiliate(incoming!);
+    try {
+      if (valid(incoming)) sessionStorage.setItem(affiliateKey, incoming!);
+      const saved = sessionStorage.getItem(affiliateKey);
+      if (valid(saved)) setAffiliate(saved!);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -213,11 +228,24 @@ function HomeContent() {
     });
     const order = await response.json();
     if (!response.ok) throw new Error(order.error || 'Checkout is unavailable.');
+    if (affiliate && order.checkoutId) {
+      setAffiliateCheckout({ id: order.checkoutId, sandbox: order.sandbox });
+      return;
+    }
     window.location.assign(order.checkoutUrl);
   };
 
   return (
     <main style={{ position: 'relative', width: '100%', height: '100dvh', overflow: 'hidden', background: '#04070e' }}>
+      {affiliateCheckout && (
+        <section role="dialog" aria-label="Whop registration checkout" className="glass-card"
+          style={{ position: 'absolute', inset: '5% max(12px, calc((100% - 540px) / 2))', zIndex: 200, overflow: 'auto', padding: 16, background: '#111827' }}>
+          <button type="button" onClick={() => setAffiliateCheckout(undefined)}>Close checkout</button>
+          <WhopCheckoutEmbed sessionId={affiliateCheckout.id} affiliateCode={affiliate}
+            environment={affiliateCheckout.sandbox ? 'sandbox' : 'production'}
+            returnUrl={window.location.origin + '/?registration=whop'} />
+        </section>
+      )}
       {registryError && <p role="alert" style={{ position: 'absolute', top: 80, left: 16, zIndex: 20 }}>
         The registry could not be loaded. Refresh to try again.
       </p>}

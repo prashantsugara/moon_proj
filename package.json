@@ -12,6 +12,7 @@
     "@react-three/fiber": "^8.16.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.45.0",
+    "@whop/checkout": "^0.7.0",
     "canvas-confetti": "^1.9.4",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.359.0",

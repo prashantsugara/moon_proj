@@ -1,6 +1,6 @@
 import { REGISTRATION_PRICES } from '@/lib/registrationPrice';
 import { paymentAdmin } from '@/lib/paymentAdmin';
-import { createWhopCheckout, whopCheckoutUrl } from '@/lib/whop';
+import { createWhopCheckout, whopCheckoutUrl, whopSandbox } from '@/lib/whop';
 import { FLAG_TEMPLATES } from '@/data/lunarRegions';
 
 export async function POST(request: Request) {
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       orderId = saved.order_id;
     }
     if (!orderId.startsWith('ch_')) return Response.json({ error: 'An earlier checkout needs reconciliation.' }, { status: 409 });
-    return Response.json({ checkoutUrl: whopCheckoutUrl(orderId) });
+    return Response.json({ checkoutUrl: whopCheckoutUrl(orderId), checkoutId: orderId, sandbox: whopSandbox() });
   } catch (error) {
     console.error('Registration checkout failed', error);
     return Response.json({ error: 'Registration checkout could not be started' }, { status: 502 });
