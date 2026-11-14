@@ -1,3 +1,4 @@
+import { REGISTRATION_PRICE } from '@/lib/registrationPrice';
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Shield, Flag, CheckCircle2, Loader2, Award, Zap } from 'lucide-react';
 import { FLAG_TEMPLATES } from '../data/lunarRegions';
@@ -202,7 +203,7 @@ export default function PlotClaimModal({
                   <span>Opening checkout…</span>
                 </>
               ) : (
-                <span>{previewing ? (user ? "Pay US$5 and register" : "Sign in to continue") : "Preview certificate"}</span>
+                <span>{previewing ? (user ? `Pay ${REGISTRATION_PRICE} and register` : "Sign in to continue") : "Preview certificate"}</span>
               )}
             </button>
           </div>

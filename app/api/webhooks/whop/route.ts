@@ -33,15 +33,16 @@ export async function POST(request: Request) {
     }
     const payment = await whopRequest('payments/' + paymentId);
     const subtotal = payment.subtotal;
+    const amount = Number(subtotal?.amount) * 100;
     if (payment.account_id !== account || payment.variant_id !== plan ||
         payment.status !== 'paid' || subtotal?.currency !== 'usd' ||
-        !/^5(?:\.0+)?$/.test(String(subtotal.amount)) ||
+        !Number.isSafeInteger(amount) || amount <= 0 ||
         typeof payment.checkout_configuration_id !== 'string' ||
         !/^ch_[a-zA-Z0-9]+$/.test(payment.checkout_configuration_id)) {
       return Response.json({ received: true });
     }
     const { data, error } = await paymentAdmin().rpc('lunar_finalize_registration', {
-      p_order: payment.checkout_configuration_id, p_payment: paymentId, p_amount: 500, p_currency: 'USD',
+      p_order: payment.checkout_configuration_id, p_payment: paymentId, p_amount: amount, p_currency: 'USD',
     });
     if (error) throw error;
     if (data !== 'completed') {

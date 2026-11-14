@@ -1,4 +1,5 @@
 'use client';
+import { REGISTRATION_PRICE } from '@/lib/registrationPrice';
 
 import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
@@ -258,7 +259,7 @@ function HomeContent() {
 
       {!exploring && <section className="explore-intro" aria-labelledby="explore-title">
         <h1 id="explore-title">Pick a spot on the Moon.</h1>
-        <p>Preview your commemorative certificate. Registration costs US$5.</p>
+        <p>Preview your commemorative certificate. Registration costs {REGISTRATION_PRICE}.</p>
         <button className="btn-primary" type="button" onClick={() => setExploring(true)}>Explore the Moon</button>
       </section>}
       {exploring && <TelemetryBar

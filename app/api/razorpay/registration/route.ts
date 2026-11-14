@@ -1,3 +1,4 @@
+import { REGISTRATION_AMOUNT_CENTS } from '@/lib/registrationPrice';
 import { paymentAdmin } from '@/lib/paymentAdmin';
 import { createWhopCheckout, whopEnabled, whopSandbox } from '@/lib/whop';
 import { paymentGateway } from '@/lib/razorpay';
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
     if (claim) return Response.json({ error: 'That location is already registered' }, { status: 409 });
 
     const { error: reserveError } = await admin.from('lunar_registration_orders').insert({
-      account_id: user.id, lat, lng, owner_name: owner, title, sqft: draft.sqft,
+      amount_cents: REGISTRATION_AMOUNT_CENTS, account_id: user.id, lat, lng, owner_name: owner, title, sqft: draft.sqft,
       motto: draft.motto, flag_id: draft.flagId,
     });
     if (reserveError && reserveError.code !== '23505') throw reserveError;
@@ -45,6 +46,12 @@ export async function POST(request: Request) {
     if (reservation.owner_name !== owner || reservation.title !== title || reservation.sqft !== draft.sqft ||
         reservation.motto !== draft.motto || reservation.flag_id !== draft.flagId) {
       return Response.json({ error: 'Use the original certificate details for this reserved location.' }, { status: 409 });
+    }
+    if (!reservation.order_id && reservation.amount_cents !== REGISTRATION_AMOUNT_CENTS) {
+      const { error: priceError } = await admin.from('lunar_registration_orders')
+        .update({ amount_cents: REGISTRATION_AMOUNT_CENTS }).eq('id', reservation.id).is('order_id', null);
+      if (priceError) throw priceError;
+      reservation.amount_cents = REGISTRATION_AMOUNT_CENTS;
     }
     let orderId = reservation.order_id;
     if (whopEnabled() && !orderId) {
@@ -62,7 +69,7 @@ export async function POST(request: Request) {
       return Response.json({ checkoutUrl: 'https://' + host + '/checkout/' + orderId + '/' });
     }
     if (!orderId) {
-      const order = await paymentGateway().orders.create({ amount: 500, currency: 'USD', receipt: reservation.id });
+      const order = await paymentGateway().orders.create({ amount: reservation.amount_cents, currency: 'USD', receipt: reservation.id });
       const { error: saveError } = await admin.from('lunar_registration_orders')
         .update({ order_id: order.id }).eq('id',reservation.id).is('order_id',null);
       if (saveError) throw saveError;
@@ -71,7 +78,7 @@ export async function POST(request: Request) {
       if (reloadError || !saved?.order_id) throw reloadError ?? new Error('Order was not saved');
       orderId = saved.order_id;
     }
-    return Response.json({ id: orderId, amount: 500, currency: 'USD' });
+    return Response.json({ id: orderId, amount: reservation.amount_cents, currency: 'USD' });
   } catch (error) {
     console.error('Registration checkout failed', error);
     return Response.json({ error: 'Registration checkout could not be started' }, { status: 502 });
