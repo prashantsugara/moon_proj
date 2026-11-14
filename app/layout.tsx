@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata = {
   title: 'MoonLandBuy | Lunar Novelty Registry',
-  description: `Explore the Moon and register a commemorative plot for ${REGISTRATION_PRICE}.`,
+  description: `Explore the Moon and register a commemorative plot from ${REGISTRATION_PRICE}.`,
 };
 
 export default function RootLayout({

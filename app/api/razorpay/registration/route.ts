@@ -1,4 +1,4 @@
-import { REGISTRATION_AMOUNT_CENTS } from '@/lib/registrationPrice';
+import { REGISTRATION_PRICES } from '@/lib/registrationPrice';
 import { paymentAdmin } from '@/lib/paymentAdmin';
 import { createWhopCheckout, whopEnabled, whopSandbox } from '@/lib/whop';
 import { paymentGateway } from '@/lib/razorpay';
@@ -18,9 +18,10 @@ export async function POST(request: Request) {
     const { lat: rawLat, lng: rawLng } = draft?.coordinates ?? {};
     const owner = typeof draft?.ownerName === 'string' ? draft.ownerName.trim() : '';
     const title = typeof draft?.title === 'string' ? draft.title.trim() : '';
+    const amount = typeof draft?.sqft === 'number' ? REGISTRATION_PRICES[draft.sqft] : undefined;
     if (!Number.isFinite(rawLat) || Math.abs(rawLat) > 90 || !Number.isFinite(rawLng) ||
         Math.abs(rawLng) > 180 || !owner || owner.length > 100 || !title || title.length > 120 ||
-        ![1,100,1000,43560].includes(draft.sqft) || typeof draft.motto !== 'string' ||
+        !amount || typeof draft.motto !== 'string' ||
         draft.motto.length > 200 || !FLAG_TEMPLATES.some((flag) => flag.id === draft.flagId)) {
       return Response.json({ error: 'Invalid certificate details' }, { status: 400 });
     }
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     if (claim) return Response.json({ error: 'That location is already registered' }, { status: 409 });
 
     const { error: reserveError } = await admin.from('lunar_registration_orders').insert({
-      amount_cents: REGISTRATION_AMOUNT_CENTS, account_id: user.id, lat, lng, owner_name: owner, title, sqft: draft.sqft,
+      amount_cents: amount, account_id: user.id, lat, lng, owner_name: owner, title, sqft: draft.sqft,
       motto: draft.motto, flag_id: draft.flagId,
     });
     if (reserveError && reserveError.code !== '23505') throw reserveError;
@@ -47,15 +48,15 @@ export async function POST(request: Request) {
         reservation.motto !== draft.motto || reservation.flag_id !== draft.flagId) {
       return Response.json({ error: 'Use the original certificate details for this reserved location.' }, { status: 409 });
     }
-    if (!reservation.order_id && reservation.amount_cents !== REGISTRATION_AMOUNT_CENTS) {
+    if (!reservation.order_id && reservation.amount_cents !== amount) {
       const { error: priceError } = await admin.from('lunar_registration_orders')
-        .update({ amount_cents: REGISTRATION_AMOUNT_CENTS }).eq('id', reservation.id).is('order_id', null);
+        .update({ amount_cents: amount }).eq('id', reservation.id).is('order_id', null);
       if (priceError) throw priceError;
-      reservation.amount_cents = REGISTRATION_AMOUNT_CENTS;
+      reservation.amount_cents = amount;
     }
     let orderId = reservation.order_id;
     if (whopEnabled() && !orderId) {
-      const checkout = await createWhopCheckout(reservation.id, request.url);
+      const checkout = await createWhopCheckout(reservation.id, request.url, reservation.sqft);
       const { error: saveError } = await admin.from('lunar_registration_orders')
         .update({ order_id: checkout.id }).eq('id', reservation.id).is('order_id', null);
       if (saveError) throw saveError;

@@ -5,8 +5,13 @@ import { whopRequest } from '@/lib/whop';
 export async function POST(request: Request) {
   const secret = process.env.WHOP_WEBHOOK_SECRET;
   const account = process.env.WHOP_ACCOUNT_ID;
-  const plan = process.env.WHOP_PLAN_ID;
-  if (!secret || !account || !plan) return Response.json({}, { status: 503 });
+  const plans = [
+    process.env.WHOP_PLAN_ID,
+    process.env.WHOP_PLAN_ID_100,
+    process.env.WHOP_PLAN_ID_1000,
+    process.env.WHOP_PLAN_ID_43560,
+  ].filter(Boolean);
+  if (!secret || !account || plans.length === 0) return Response.json({}, { status: 503 });
 
   const body = await request.text();
   const id = request.headers.get('webhook-id') ?? '';
@@ -34,7 +39,7 @@ export async function POST(request: Request) {
     const payment = await whopRequest('payments/' + paymentId);
     const subtotal = payment.subtotal;
     const amount = Number(subtotal?.amount) * 100;
-    if (payment.account_id !== account || payment.variant_id !== plan ||
+    if (payment.account_id !== account || !plans.includes(payment.variant_id) ||
         payment.status !== 'paid' || subtotal?.currency !== 'usd' ||
         !Number.isSafeInteger(amount) || amount <= 0 ||
         typeof payment.checkout_configuration_id !== 'string' ||

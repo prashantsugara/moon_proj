@@ -19,8 +19,8 @@ export async function whopRequest(path: string, options: RequestInit = {}) {
   return response.json();
 }
 
-export async function createWhopCheckout(registrationId: string, requestUrl: string) {
-  const plan = process.env.WHOP_PLAN_ID;
+export async function createWhopCheckout(registrationId: string, requestUrl: string, sqft: number) {
+  const plan = sqft === 1 ? process.env.WHOP_PLAN_ID : process.env['WHOP_PLAN_ID_' + sqft];
   if (!plan || !process.env.WHOP_WEBHOOK_SECRET || !process.env.WHOP_ACCOUNT_ID) {
     throw new Error('Whop registration is not configured');
   }

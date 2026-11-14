@@ -1,4 +1,4 @@
-import { REGISTRATION_PRICE } from '@/lib/registrationPrice';
+import { REGISTRATION_PRICES, formatRegistrationPrice } from '@/lib/registrationPrice';
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Shield, Flag, CheckCircle2, Loader2, Award, Zap } from 'lucide-react';
 import { FLAG_TEMPLATES } from '../data/lunarRegions';
@@ -17,7 +17,7 @@ export default function PlotClaimModal({
   const [ownerName, setOwnerName] = useState(initialDraft?.ownerName ?? '');
   const [plotTitle, setPlotTitle] = useState(initialDraft?.title ?? '');
   const [motto, setMotto] = useState(initialDraft?.motto ?? '');
-  const [sqftOption, setSqftOption] = useState(initialDraft?.sqft ?? 100);
+  const [sqftOption, setSqftOption] = useState(initialDraft?.sqft ?? 1);
   const [selectedFlagId, setSelectedFlagId] = useState(initialDraft?.flagId ?? 'apollo');
   const [errorMessage, setErrorMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -60,7 +60,7 @@ export default function PlotClaimModal({
   const query = flagSearch.trim().toLowerCase();
   const matchingFlags = FLAG_TEMPLATES.filter((flag) =>
     flag.name.toLowerCase().includes(query) || flag.code.toLowerCase() === query);
-  const activePreset = SQFT_PRESETS.find((p) => p.sqft === sqftOption) || SQFT_PRESETS[1];
+  const activePreset = SQFT_PRESETS.find((p) => p.sqft === sqftOption) || SQFT_PRESETS[0];
   const handleSubmitClaim = async (event) => {
     event.preventDefault();
     if (isProcessing || !ownerName.trim() || !plotTitle.trim()) return;
@@ -156,7 +156,7 @@ export default function PlotClaimModal({
                     onClick={() => setSqftOption(preset.sqft)}
                     disabled={isProcessing}
                   >
-                    <span className="preset-label">{preset.label}</span>
+                    <span className="preset-label">{preset.label} · {formatRegistrationPrice(REGISTRATION_PRICES[preset.sqft])}</span>
                   </button>
                 ))}
               </div>
@@ -203,7 +203,7 @@ export default function PlotClaimModal({
                   <span>Opening checkout…</span>
                 </>
               ) : (
-                <span>{previewing ? (user ? `Pay ${REGISTRATION_PRICE} and register` : "Sign in to continue") : "Preview certificate"}</span>
+                <span>{previewing ? (user ? `Pay ${formatRegistrationPrice(REGISTRATION_PRICES[activePreset.sqft])} and register` : "Sign in to continue") : "Preview certificate"}</span>
               )}
             </button>
           </div>
