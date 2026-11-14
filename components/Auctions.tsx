@@ -1,6 +1,5 @@
 'use client';
 
-import { openCheckout } from '@/lib/openCheckout';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -14,7 +13,7 @@ type Plot = { id: string; title: string; accountId: string };
 
 const columns = 'id,claim_id,seller_id,winner_id,price,ends_at,status,deadline,fee';
 const money = (paise: number) => new Intl.NumberFormat('en-IN', {
-  style: 'currency', currency: 'INR',
+  style: 'currency', currency: 'USD',
 }).format(paise / 100);
 
 export default function Auctions({ plots, onClose, refreshClaims, initialPlot }: {
@@ -25,7 +24,6 @@ export default function Auctions({ plots, onClose, refreshClaims, initialPlot }:
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const [instructions, setInstructions] = useState<{ accountId: string; auctionId: string; upi: string } | null>(null);
 
   async function load() {
     const { data, error } = await supabase.from('lunar_auctions').select(columns)
@@ -65,16 +63,24 @@ export default function Auctions({ plots, onClose, refreshClaims, initialPlot }:
     });
   }
 
+  async function setupSeller() {
+    const response = await fetch('/api/whop/seller', {
+      method: 'POST', headers: { Authorization: `Bearer ${session?.access_token}` },
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Seller setup is unavailable.');
+    window.location.assign(result.url);
+  }
+
   async function checkout(id: string) {
-    const response = await fetch('/api/razorpay/create-order', {
+    const response = await fetch('/api/whop/transfer-fee', {
       method: 'POST', headers: {
         Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json',
       }, body: JSON.stringify({ auctionId: id }),
     });
     const order = await response.json();
     if (!response.ok) throw new Error(order.error || 'Checkout is unavailable.');
-    await openCheckout(order, 'Commemorative registry transfer fee', () =>
-      setMessage('Payment submitted. The registry updates after Razorpay confirms it.'));
+    window.location.assign(order.checkoutUrl);
   }
 
   return (
@@ -84,7 +90,8 @@ export default function Auctions({ plots, onClose, refreshClaims, initialPlot }:
     }}>
       <button type="button" onClick={onClose} style={{ float: 'right' }}>Close</button>
       <h2>Marketplace</h2>
-      <p>Auctions transfer commemorative registry entries. Pay the seller directly after winning. The winner also pays a platform fee of 2% of the winning bid.</p>
+      {user && <button type="button" disabled={busy} onClick={() => void run(setupSeller)}>Set up Whop seller payouts</button>}
+      <p>Auctions transfer commemorative registry entries. The winner pays through Whop. MoonLandBuy collects 2% from the sale.</p>
       {message && <p role="status">{message}</p>}
       {!user && <p>Sign in to list a plot or place a bid.</p>}
       <fieldset disabled={busy} style={{ border: 0, minWidth: 0 }}>
@@ -93,14 +100,13 @@ export default function Auctions({ plots, onClose, refreshClaims, initialPlot }:
             event.preventDefault();
             const values = new FormData(event.currentTarget);
             void action('list', String(values.get('plot')), Math.round(Number(values.get('price')) * 100),
-              Number(values.get('hours')), String(values.get('upi')));
+              Number(values.get('hours')));
           }}>
             <h3>List a plot</h3>
             <label>Plot <select name="plot" defaultValue={initialPlot} required>{plots.filter((plot) => plot.accountId === user.id)
               .map((plot) => <option key={plot.id} value={plot.id}>{plot.title}</option>)}</select></label>
-            <label>Opening price (INR) <input name="price" type="number" min="50" max="500000" step=".01" required /></label>
+            <label>Opening price (USD) <input name="price" type="number" min="50" max="500000" step=".01" required /></label>
             <label>Duration (hours) <input name="hours" type="number" min="1" max="168" defaultValue="24" required /></label>
-            <label>UPI ID <input name="upi" maxLength={100} required /></label>
             <button type="submit">Create auction</button>
           </form>
         )}
@@ -121,7 +127,7 @@ export default function Auctions({ plots, onClose, refreshClaims, initialPlot }:
                 const price = Number(new FormData(event.currentTarget).get('price'));
                 void action('bid', auction.id, Math.round(price * 100));
               }}>
-                <label>Bid (INR) <input name="price" type="number" step=".01" required
+                <label>Bid (USD) <input name="price" type="number" step=".01" required
                   min={(auction.price + (auction.winner_id ? 1 : 0)) / 100} max="500000" /></label>
                 <button type="submit">Place bid</button>
               </form>}
@@ -131,21 +137,8 @@ export default function Auctions({ plots, onClose, refreshClaims, initialPlot }:
                 <button onClick={() => void action('close', auction.id)}>Close auction</button>}
               {(winner || seller) && !due && auction.status === 'awaiting_buyer' &&
                 <button onClick={() => void action('expire', auction.id)}>Flag overdue transfer</button>}
-              {winner && due && auction.status === 'awaiting_buyer' && <>
-                <button onClick={() => void run(async () => {
-                  const { data, error } = await supabase.rpc('lunar_payment_instructions', { p_id: auction.id });
-                  if (error) throw error;
-                  if (!data) throw new Error('Payment instructions are unavailable.');
-                  setInstructions({ accountId: user.id, auctionId: auction.id, upi: data });
-                })}>Show seller UPI ID</button>
-                {instructions?.accountId === user.id && instructions.auctionId === auction.id &&
-                  <p>Pay {money(auction.price)} to {instructions.upi}</p>}
-                <button onClick={() => void action('buyer_paid', auction.id)}>I paid the seller</button>
-              </>}
-              {seller && due && auction.status === 'awaiting_seller' &&
-                <button onClick={() => void action('seller_confirmed', auction.id)}>I received payment</button>}
-              {winner && due && auction.status === 'awaiting_fee' &&
-                <button onClick={() => void run(() => checkout(auction.id))}>Pay transfer fee ({money(auction.fee)})</button>}
+              {winner && due && auction.status === 'awaiting_buyer' &&
+                <button onClick={() => void run(() => checkout(auction.id))}>Pay winning bid ({money(auction.price)})</button>}
               {(seller || winner) && ['awaiting_seller', 'awaiting_fee'].includes(auction.status) && (
                 <form onSubmit={(event) => {
                   event.preventDefault();

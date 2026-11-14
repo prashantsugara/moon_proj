@@ -1,5 +1,5 @@
 import { paymentAdmin } from '@/lib/paymentAdmin';
-import { paymentGateway } from '@/lib/razorpay';
+import { createWhopTransferCheckout, whopCheckoutUrl } from '@/lib/whop';
 
 export async function POST(request: Request) {
   if (process.env.MARKETPLACE_ENABLED !== 'true') return Response.json({}, { status: 503 });
@@ -16,30 +16,29 @@ export async function POST(request: Request) {
     }
 
     const { data: auction, error } = await admin.from('lunar_auctions')
-      .select('id, fee, order_id, status, deadline').eq('id', id).eq('winner_id', user.id).maybeSingle();
+      .select('id, price, fee, order_id, status, deadline, whop_seller_id').eq('id', id).eq('winner_id', user.id).maybeSingle();
     if (error) throw error;
-    if (auction?.status !== 'awaiting_fee' || Date.parse(auction.deadline) <= Date.now()) {
+    if (!auction?.whop_seller_id || auction.status !== 'awaiting_buyer' || Date.parse(auction.deadline) <= Date.now()) {
       return Response.json({ error: 'Checkout is unavailable for this auction' }, { status: 409 });
     }
     if (auction.order_id) {
-      return Response.json({ id: auction.order_id, amount: auction.fee, currency: 'INR' });
+      if (!auction.order_id.startsWith('ch_')) return Response.json({ error: 'An earlier checkout needs reconciliation.' }, { status: 409 });
+      return Response.json({ checkoutUrl: whopCheckoutUrl(auction.order_id) });
     }
 
-    const order = await paymentGateway().orders.create({
-      amount: auction.fee, currency: 'INR', receipt: auction.id,
-    });
+    const order = await createWhopTransferCheckout(auction.id, auction.whop_seller_id, auction.price, auction.fee, request.url);
     // A concurrent request can create an unused gateway order. Only the persisted order is shown to buyers.
     const { data: saved, error: saveError } = await admin.from('lunar_auctions')
-      .update({ order_id: order.id }).eq('id', id).eq('status', 'awaiting_fee')
+      .update({ order_id: order.id }).eq('id', id).eq('status', 'awaiting_buyer')
       .gt('deadline', new Date().toISOString()).is('order_id', null).select('order_id').maybeSingle();
     if (saveError) throw saveError;
-    if (saved) return Response.json({ id: saved.order_id, amount: auction.fee, currency: 'INR' });
+    if (saved) return Response.json({ checkoutUrl: whopCheckoutUrl(saved.order_id) });
     const { data: existing, error: reloadError } = await admin.from('lunar_auctions')
-      .select('order_id').eq('id', id).eq('status', 'awaiting_fee')
+      .select('order_id').eq('id', id).eq('status', 'awaiting_buyer')
       .gt('deadline', new Date().toISOString()).maybeSingle();
     if (reloadError) throw reloadError;
     if (!existing?.order_id) return Response.json({ error: 'Checkout is no longer available' }, { status: 409 });
-    return Response.json({ id: existing.order_id, amount: auction.fee, currency: 'INR' });
+    return Response.json({ checkoutUrl: whopCheckoutUrl(existing.order_id) });
   } catch (error) {
     console.error('Marketplace checkout failed', error);
     return Response.json({ error: 'Checkout could not be started' }, { status: 502 });

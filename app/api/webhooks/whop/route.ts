@@ -38,19 +38,22 @@ export async function POST(request: Request) {
     }
     const payment = await whopRequest('payments/' + paymentId);
     const subtotal = payment.subtotal;
-    const amount = Number(subtotal?.amount) * 100;
-    if (payment.account_id !== account || !plans.includes(payment.variant_id) ||
+    const decimalAmount = String(subtotal?.amount);
+    const amount = /^\d+(?:\.\d{1,2}0*)?$/.test(decimalAmount) ? Math.round(Number(decimalAmount) * 100) : NaN;
+    const isTransfer = /^biz_[a-zA-Z0-9]+$/.test(payment.account_id ?? '') && payment.account_id !== account;
+    if ((!isTransfer && (payment.account_id !== account || !plans.includes(payment.variant_id))) ||
         payment.status !== 'paid' || subtotal?.currency !== 'usd' ||
         !Number.isSafeInteger(amount) || amount <= 0 ||
         typeof payment.checkout_configuration_id !== 'string' ||
         !/^ch_[a-zA-Z0-9]+$/.test(payment.checkout_configuration_id)) {
       return Response.json({ received: true });
     }
-    const { data, error } = await paymentAdmin().rpc('lunar_finalize_registration', {
-      p_order: payment.checkout_configuration_id, p_payment: paymentId, p_amount: amount, p_currency: 'USD',
+    const { data, error } = await paymentAdmin().rpc(isTransfer ? 'lunar_finalize_whop_sale' : 'lunar_finalize_registration', {
+      p_order: payment.checkout_configuration_id, p_payment: paymentId, p_amount: amount, p_currency: 'USD', ...(isTransfer ? { p_seller: payment.account_id } : {}),
     });
     if (error) throw error;
-    if (data !== 'completed') {
+    if (data === 'unknown_order') return Response.json({ received: true });
+    if (data !== 'completed' && !(isTransfer && data === 'disputed')) {
       console.error('Whop registration needs reconciliation', paymentId, data);
       return Response.json({}, { status: 409 });
     }

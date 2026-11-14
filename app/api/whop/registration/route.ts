@@ -1,7 +1,6 @@
 import { REGISTRATION_PRICES } from '@/lib/registrationPrice';
 import { paymentAdmin } from '@/lib/paymentAdmin';
-import { createWhopCheckout, whopEnabled, whopSandbox } from '@/lib/whop';
-import { paymentGateway } from '@/lib/razorpay';
+import { createWhopCheckout, whopCheckoutUrl } from '@/lib/whop';
 import { FLAG_TEMPLATES } from '@/data/lunarRegions';
 
 export async function POST(request: Request) {
@@ -55,7 +54,7 @@ export async function POST(request: Request) {
       reservation.amount_cents = amount;
     }
     let orderId = reservation.order_id;
-    if (whopEnabled() && !orderId) {
+    if (!orderId) {
       const checkout = await createWhopCheckout(reservation.id, request.url, reservation.sqft);
       const { error: saveError } = await admin.from('lunar_registration_orders')
         .update({ order_id: checkout.id }).eq('id', reservation.id).is('order_id', null);
@@ -65,21 +64,8 @@ export async function POST(request: Request) {
       if (reloadError || !saved?.order_id) throw reloadError ?? new Error('Checkout was not saved');
       orderId = saved.order_id;
     }
-    if (orderId?.startsWith('ch_')) {
-      const host = whopSandbox() ? 'sandbox.whop.com' : 'whop.com';
-      return Response.json({ checkoutUrl: 'https://' + host + '/checkout/' + orderId + '/' });
-    }
-    if (!orderId) {
-      const order = await paymentGateway().orders.create({ amount: reservation.amount_cents, currency: 'USD', receipt: reservation.id });
-      const { error: saveError } = await admin.from('lunar_registration_orders')
-        .update({ order_id: order.id }).eq('id',reservation.id).is('order_id',null);
-      if (saveError) throw saveError;
-      const { data: saved, error: reloadError } = await admin.from('lunar_registration_orders')
-        .select('order_id').eq('id',reservation.id).single();
-      if (reloadError || !saved?.order_id) throw reloadError ?? new Error('Order was not saved');
-      orderId = saved.order_id;
-    }
-    return Response.json({ id: orderId, amount: reservation.amount_cents, currency: 'USD' });
+    if (!orderId.startsWith('ch_')) return Response.json({ error: 'An earlier checkout needs reconciliation.' }, { status: 409 });
+    return Response.json({ checkoutUrl: whopCheckoutUrl(orderId) });
   } catch (error) {
     console.error('Registration checkout failed', error);
     return Response.json({ error: 'Registration checkout could not be started' }, { status: 502 });

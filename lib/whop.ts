@@ -1,7 +1,3 @@
-export function whopEnabled() {
-  return process.env.REGISTRATION_PAYMENT_PROVIDER === 'whop';
-}
-
 export function whopSandbox() {
   return process.env.WHOP_ENVIRONMENT === 'sandbox';
 }
@@ -24,13 +20,30 @@ export async function createWhopCheckout(registrationId: string, requestUrl: str
   if (!plan || !process.env.WHOP_WEBHOOK_SECRET || !process.env.WHOP_ACCOUNT_ID) {
     throw new Error('Whop registration is not configured');
   }
+  return createCheckout({ variant_id: plan }, { registration_id: registrationId }, new URL('/?registration=whop', requestUrl));
+}
+
+export function createWhopTransferCheckout(auctionId: string, account: string, price: number, fee: number, requestUrl: string) {
+  return createCheckout({
+    account_id: account,
+    variant: { currency: 'usd', billing_type: 'one_time', initial_price: price / 100, application_fee_amount: fee / 100 },
+  }, { auction_id: auctionId }, new URL('/?transfer=whop', requestUrl), 'auction:' + auctionId);
+}
+
+export function whopCheckoutUrl(id: string) {
+  if (!/^ch_[a-zA-Z0-9]+$/.test(id)) throw new Error('Invalid Whop checkout ID');
+  return 'https://' + (whopSandbox() ? 'sandbox.whop.com' : 'whop.com') + '/checkout/' + id + '/';
+}
+
+async function createCheckout(pricing: object, metadata: object, redirect: URL, idempotencyKey?: string) {
   const checkout = await whopRequest('checkout_configurations', {
     method: 'POST',
+    headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {},
     body: JSON.stringify({
       mode: 'payment',
-      variant_id: plan,
-      redirect_url: new URL('/?registration=whop', requestUrl).href,
-      metadata: { registration_id: registrationId },
+      ...pricing,
+      redirect_url: redirect.href,
+      metadata,
     }),
   });
   if (typeof checkout.id !== 'string' || !/^ch_[a-zA-Z0-9]+$/.test(checkout.id)) {

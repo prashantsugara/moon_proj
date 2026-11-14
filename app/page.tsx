@@ -3,7 +3,6 @@ import { REGISTRATION_PRICE } from '@/lib/registrationPrice';
 
 import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { openCheckout } from '@/lib/openCheckout';
 import Auctions from '@/components/Auctions';
 import HeaderNav from '@/components/HeaderNav';
 import TelemetryBar from '@/components/TelemetryBar';
@@ -94,6 +93,13 @@ function HomeContent() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get('seller') === 'whop' && process.env.NEXT_PUBLIC_MARKETPLACE_ENABLED === 'true') {
+      setMarketOpen(true);
+    }
+    if (params.get('transfer') === 'whop' && process.env.NEXT_PUBLIC_MARKETPLACE_ENABLED === 'true') {
+      setMarketOpen(true);
+      setPaymentMessage('The registry updates after Whop confirms the auction payment.');
+    }
     if (params.get('registration') === 'whop') {
       setIsRegistryOpen(true);
       setPaymentMessage('Your certificate appears in My Land once payment is confirmed. Reopen My Land to refresh.');
@@ -200,23 +206,14 @@ function HomeContent() {
       setIsAuthOpen(true);
       return;
     }
-    const response = await fetch('/api/razorpay/registration', {
+    const response = await fetch('/api/whop/registration', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + session?.access_token, 'Content-Type': 'application/json' },
       body: JSON.stringify(claim),
     });
     const order = await response.json();
     if (!response.ok) throw new Error(order.error || 'Checkout is unavailable.');
-    if (order.checkoutUrl) {
-      window.location.assign(order.checkoutUrl);
-      return;
-    }
-    await openCheckout(order, 'Commemorative lunar certificate', () => {
-      discardDraft();
-      setIsClaimModalOpen(false);
-      setPaymentMessage('Payment submitted. Your certificate appears in My Land after Razorpay confirms it.');
-      void refreshClaims().catch(() => {});
-    });
+    window.location.assign(order.checkoutUrl);
   };
 
   return (
