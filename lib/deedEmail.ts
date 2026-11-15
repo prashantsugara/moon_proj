@@ -1,9 +1,30 @@
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
 import { jsPDF } from 'jspdf';
 import { drawDeed, getDeedUrl } from '@/utils/deedGenerator';
 import { paymentAdmin } from '@/lib/paymentAdmin';
+
+const certificateFonts = {
+  serif: '"Noto Serif"',
+  mono: '"Noto Sans Mono"',
+};
+let fontsLoaded = false;
+
+function loadCertificateFonts() {
+  if (fontsLoaded) return;
+  const fontPaths = [
+    ...['400-normal', '400-italic', '700-normal', '700-italic']
+      .map(style => `noto-serif/files/noto-serif-latin-${style}.woff`),
+    'noto-sans-mono/files/noto-sans-mono-latin-600-normal.woff',
+  ];
+  for (const file of fontPaths) {
+    if (!GlobalFonts.registerFromPath(join(process.cwd(), 'node_modules', '@fontsource', file))) {
+      throw new Error('Could not load certificate font: ' + file);
+    }
+  }
+  fontsLoaded = true;
+}
 
 function validEmail(value: unknown) {
   const email = typeof value === 'string' ? value.trim() : '';
@@ -39,13 +60,14 @@ export async function sendDeedEmail(
   if (!recipient) throw new Error('Deed email recipient is unavailable');
   const copy = loginEmail && loginEmail.toLowerCase() !== recipient.toLowerCase() ? [loginEmail] : undefined;
 
+  loadCertificateFonts();
   const canvas = createCanvas(2048, 1448);
   const claimedAt = new Date(deed.created_at);
   await drawDeed(canvas, {
     id: deed.id, ownerName: deed.owner_name, title: deed.title, lat: deed.lat, lng: deed.lng,
     acres: deed.sqft / 43560, motto: deed.motto, flagId: deed.flag_id,
     regionName: 'Lunar Surface', claimedAt, txHash: deed.id,
-  }, siteUrl, (src: string) => loadImage(join(process.cwd(), 'public', src)));
+  }, siteUrl, (src: string) => loadImage(join(process.cwd(), 'public', src)), certificateFonts);
   const png = canvas.toBuffer('image/png');
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [2048, 1448] });
   pdf.setCreationDate("D:" + claimedAt.toISOString().slice(0, 19).replace(/\D/g, '') + "+00'00'");
@@ -64,8 +86,11 @@ export async function sendDeedEmail(
       to: [recipient],
       bcc: copy,
       subject: 'Your lunar deed is ready',
-      text: 'Your commemorative MoonLandBuy certificate is attached as a PDF and a PNG. View it online at '
-        + getDeedUrl(deed.id, siteUrl),
+      text: [
+        'Your commemorative MoonLandBuy certificate is attached as a PDF and a PNG.',
+        `Plot: ${deed.title}\nRegistered to: ${deed.owner_name}\nArea: ${deed.sqft} sq ft`,
+        'View your deed online: ' + getDeedUrl(deed.id, siteUrl),
+      ].join('\n\n'),
       attachments: [
         { filename: 'Lunar-Certificate.pdf', content: Buffer.from(pdf.output('arraybuffer')).toString('base64') },
         { filename: 'Lunar-Certificate.png', content: png.toString('base64') },

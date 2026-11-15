@@ -19,12 +19,14 @@ export async function generateDeedImage(plotData) {
   return canvas.toDataURL('image/png');
 }
 
-export async function drawDeed(canvas, plotData, origin, loadFlag) {
+export async function drawDeed(canvas, plotData, origin, loadFlag, fonts = {}) {
   const width = 2048;
   const height = 1448;
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
+  const serif = fonts.serif ?? '"Georgia", "Times New Roman", serif';
+  const mono = fonts.mono ?? '"Courier New", monospace';
 
   // 1. Classic Off-White Parchment Paper Background
   ctx.fillStyle = '#faf9f5';
@@ -78,13 +80,13 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
   ctx.textAlign = 'center';
 
   // Issuer Subtitle
-  ctx.font = '600 20px "Georgia", "Times New Roman", serif';
+  ctx.font = '600 20px ' + serif;
   ctx.fillStyle = '#b45309';
   ctx.letterSpacing = '3px';
   ctx.fillText('UNITED LUNAR LAND REGISTRY • EXTRA-TERRESTRIAL PROPERTY AUTHORITY', width / 2, 125);
 
   // Main Certificate Title
-  ctx.font = '700 58px "Georgia", "Times New Roman", serif';
+  ctx.font = '700 58px ' + serif;
   ctx.fillStyle = '#0f172a';
   ctx.fillText('COMMEMORATIVE CERTIFICATE', width / 2, 195);
 
@@ -102,7 +104,7 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
   ctx.fill();
 
   // 3. Legal Grant Declaration
-  ctx.font = 'italic 400 22px "Georgia", "Times New Roman", serif';
+  ctx.font = 'italic 400 22px ' + serif;
   ctx.fillStyle = '#475569';
   ctx.fillText(
     'BE IT KNOWN TO ALL THAT THE REAL ESTATE PARCEL HEREIN DESCRIBED HAS BEEN OFFICIALLY DULY REGISTERED TO',
@@ -121,7 +123,7 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
   ctx.lineWidth = 2;
   ctx.strokeRect(width / 2 - 474, 316, 948, 78);
 
-  ctx.font = '700 44px "Georgia", "Times New Roman", serif';
+  ctx.font = '700 44px ' + serif;
   ctx.fillStyle = '#0f172a';
   ctx.fillText(plotData.ownerName || 'UNREGISTERED CITIZEN', width / 2, 370);
 
@@ -139,7 +141,7 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(120, startY, 860, 48);
 
-  ctx.font = '700 18px "Georgia", "Times New Roman", serif';
+  ctx.font = '700 18px ' + serif;
   ctx.fillStyle = '#ffffff';
   ctx.fillText('PARCEL SPECIFICATIONS & COORDINATES', 150, startY + 30);
 
@@ -160,11 +162,11 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
       ctx.fillRect(122, rowY - 26, 856, 46);
     }
 
-    ctx.font = '600 14px "Georgia", "Times New Roman", serif';
+    ctx.font = '600 14px ' + serif;
     ctx.fillStyle = '#64748b';
     ctx.fillText(label, 150, rowY);
 
-    ctx.font = '600 16px "Courier New", monospace';
+    ctx.font = '600 16px ' + mono;
     ctx.fillStyle = label === 'REGISTRY DEED ID' ? '#b45309' : '#0f172a';
     ctx.fillText(value, 380, rowY);
     rowY += 48;
@@ -180,12 +182,12 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(1060, startY, 860, 48);
 
-  ctx.font = '700 18px "Georgia", "Times New Roman", serif';
+  ctx.font = '700 18px ' + serif;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(plotData.draft ? 'CERTIFICATE PREVIEW' : 'NATIONAL EMBLEM & VERIFICATION QR', 1090, startY + 30);
 
   // Custom Motto
-  ctx.font = 'italic 400 20px "Georgia", serif';
+  ctx.font = 'italic 400 20px ' + serif;
   ctx.fillStyle = '#334155';
   const mottoText = `"${plotData.motto || 'Per Aspera Ad Astra'}"`;
   ctx.fillText(mottoText, 1090, startY + 90);
@@ -230,7 +232,7 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
         }
       }
     }
-    ctx.font = '600 13px "Courier New", monospace';
+    ctx.font = '600 13px ' + mono;
     ctx.fillStyle = '#64748b';
     ctx.fillText('SCAN QR TO VIEW DEED', 1460, startY + 395);
   }
@@ -258,13 +260,13 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
   ctx.lineWidth = 4;
   ctx.stroke();
 
-  ctx.font = '700 13px "Georgia", serif';
+  ctx.font = '700 13px ' + serif;
   ctx.fillStyle = '#422006';
   ctx.textAlign = 'center';
   ctx.fillText('★ COMMEMORATIVE SEAL ★', sealX, sealY - 25);
   ctx.font = '700 32px sans-serif';
   ctx.fillText('🌕', sealX, sealY + 12);
-  ctx.font = '700 12px "Georgia", serif';
+  ctx.font = '700 12px ' + serif;
   ctx.fillText('LUNAR REGISTRY', sealX, sealY + 45);
 
   // Middle Signature Line
@@ -276,17 +278,17 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
   ctx.lineTo(1200, footerY + 210);
   ctx.stroke();
 
-  ctx.font = 'italic 700 32px "Georgia", serif';
+  ctx.font = 'italic 700 32px ' + serif;
   ctx.fillStyle = '#0f172a';
   ctx.fillText('Commander V. Vance', 950, footerY + 195);
 
-  ctx.font = '600 16px "Georgia", serif';
+  ctx.font = '600 16px ' + serif;
   ctx.fillStyle = '#64748b';
   ctx.fillText('HIGH COMMISSIONER OF EXTRA-TERRESTRIAL LANDS', 950, footerY + 240);
 
   // Right Issue Timestamp & Auth Code
   ctx.textAlign = 'right';
-  ctx.font = '600 16px "Courier New", monospace';
+  ctx.font = '600 16px ' + mono;
   ctx.fillStyle = '#64748b';
   ctx.fillText(`DATE OF ISSUANCE: ${new Date(plotData.claimedAt || Date.now()).toISOString().split('T')[0]}`, width - 140, footerY + 180);
   ctx.fillText(`STATUS: ${plotData.draft ? "UNSAVED PREVIEW" : "COMMEMORATIVE"}`, width - 140, footerY + 215);
@@ -295,7 +297,7 @@ export async function drawDeed(canvas, plotData, origin, loadFlag) {
 
   // Fine Print Legal Disclaimer Line
   ctx.textAlign = 'center';
-  ctx.font = '500 12px "Georgia", serif';
+  ctx.font = '500 12px ' + serif;
   ctx.fillStyle = '#94a3b8';
   ctx.fillText('COMMEMORATIVE CERTIFICATE ONLY. CONFERS NO LEGAL RIGHTS TO LUNAR LAND.', width / 2, height - 60);
 
