@@ -108,6 +108,10 @@ function HomeContent() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const oppref = params.get('oppref');
+    if (oppref) {
+      try { sessionStorage.setItem('openai-ads-oppref', oppref); } catch {}
+    }
     if (params.get('seller') === 'whop' && process.env.NEXT_PUBLIC_MARKETPLACE_ENABLED === 'true') {
       setMarketOpen(true);
     }
@@ -221,10 +225,12 @@ function HomeContent() {
       setIsAuthOpen(true);
       return;
     }
+    let oppref: string | null = null;
+    try { oppref = sessionStorage.getItem('openai-ads-oppref'); } catch {}
     const response = await fetch('/api/whop/registration', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + session?.access_token, 'Content-Type': 'application/json' },
-      body: JSON.stringify(claim),
+      body: JSON.stringify({ ...claim, oppref }),
     });
     const order = await response.json();
     if (!response.ok) throw new Error(order.error || 'Checkout is unavailable.');

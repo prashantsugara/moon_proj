@@ -55,7 +55,9 @@ export async function POST(request: Request) {
     }
     let orderId = reservation.order_id;
     if (!orderId) {
-      const checkout = await createWhopCheckout(reservation.id, request.url, reservation.sqft);
+      const oppref = typeof draft.oppref === 'string' && draft.oppref.length <= 1024
+        ? draft.oppref : undefined;
+      const checkout = await createWhopCheckout(reservation.id, request.url, reservation.sqft, oppref);
       const { error: saveError } = await admin.from('lunar_registration_orders')
         .update({ order_id: checkout.id }).eq('id', reservation.id).is('order_id', null);
       if (saveError) throw saveError;

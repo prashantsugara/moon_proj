@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { paymentAdmin } from '@/lib/paymentAdmin';
-import { whopRequest } from '@/lib/whop';
+import { whopRequest, whopSandbox } from '@/lib/whop';
+import { reportRegistrationPurchase } from '@/lib/openaiAds';
 
 export async function POST(request: Request) {
   const secret = process.env.WHOP_WEBHOOK_SECRET;
@@ -56,6 +57,9 @@ export async function POST(request: Request) {
     if (data !== 'completed' && !(isTransfer && data === 'disputed')) {
       console.error('Whop registration needs reconciliation', paymentId, data);
       return Response.json({}, { status: 409 });
+    }
+    if (!isTransfer && !whopSandbox()) {
+      await reportRegistrationPurchase(paymentId, amount, payment.metadata?.oppref);
     }
     return Response.json({ received: true });
   } catch (error) {
