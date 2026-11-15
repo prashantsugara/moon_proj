@@ -1,10 +1,11 @@
-import React, { useRef, useEffect, useMemo, Suspense } from 'react';
+import React, { useRef, useEffect, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { createProceduralBumpMap, latLngToVector3, vector3ToLatLng } from '../utils/textureGenerator';
+import { latLngToVector3, vector3ToLatLng } from '../utils/textureGenerator';
 
-import moonMapUrl from '../assets/moon_map.jpg';
+import moonMap from '../assets/lunar-albedo.jpg';
+import moonElevation from '../assets/lunar-elevation.jpg';
 import earthMapUrl from '../assets/earth_map.jpg';
 
 const projectedPlot = new THREE.Vector3();
@@ -20,7 +21,6 @@ function positionPlotLabel(object, camera, size) {
   ];
 }
 
-const MOON_MAP_SRC = typeof moonMapUrl === 'object' && moonMapUrl?.src ? moonMapUrl.src : (moonMapUrl || '/moon_map.jpg');
 const EARTH_MAP_SRC = typeof earthMapUrl === 'object' && earthMapUrl?.src ? earthMapUrl.src : (earthMapUrl || '/earth_map.jpg');
 
 const MOON_RADIUS = 3.5;
@@ -35,15 +35,19 @@ function CameraController({ targetPosition }) {
     if (targetPosition) {
       const pos = latLngToVector3(targetPosition.lat, targetPosition.lng, MOON_RADIUS, size.width < 700 ? 9.5 : 6.6);
       const startPos = camera.position.clone();
-      let progress = 0;
+      const startDirection = startPos.clone().normalize();
+      const turn = new THREE.Quaternion().setFromUnitVectors(startDirection, pos.clone().normalize());
+      const rotation = new THREE.Quaternion();
+      const startedAt = performance.now();
 
       const animateCamera = () => {
-        progress += 0.04;
-        if (progress <= 1) {
-          camera.position.lerpVectors(startPos, pos, progress);
-          camera.lookAt(0, 0, 0);
-          frame = requestAnimationFrame(animateCamera);
-        }
+        const progress = Math.min((performance.now() - startedAt) / 500, 1);
+        const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
+        rotation.identity().slerp(turn, eased);
+        camera.position.copy(startDirection).applyQuaternion(rotation)
+          .multiplyScalar(THREE.MathUtils.lerp(startPos.length(), pos.length(), eased));
+        camera.lookAt(0, 0, 0);
+        if (progress < 1) frame = requestAnimationFrame(animateCamera);
       };
       animateCamera();
     }
@@ -102,18 +106,10 @@ function EarthBackground() {
 
 // 3D Square Foot Sector Grid Division Wireframe Overlay
 function SqFtGridOverlay({ showGrid }) {
-  const gridRef = useRef();
-
-  useFrame((_, delta) => {
-    if (gridRef.current) {
-      gridRef.current.rotation.y += delta * 0.008;
-    }
-  });
-
   if (!showGrid) return null;
 
   return (
-    <mesh ref={gridRef}>
+    <mesh raycast={() => null}>
       <sphereGeometry args={[MOON_RADIUS * 1.004, 64, 32]} />
       <meshBasicMaterial
         color="#00f3ff"
@@ -138,11 +134,8 @@ function PhotorealisticMoonMesh({
   const sphereRef = useRef();
   const { gl } = useThree();
 
-  // Load NASA photo texture map
-  const moonTexture = useTexture(MOON_MAP_SRC);
-
-  // Generate procedural elevation bump map
-  const bumpMap = useMemo(() => createProceduralBumpMap(), []);
+  // NASA CGI Moon Kit maps, both centered on zero longitude.
+  const [moonTexture, bumpMap] = useTexture([moonMap.src, moonElevation.src]);
 
   useEffect(() => {
     if (moonTexture) {
@@ -157,13 +150,6 @@ function PhotorealisticMoonMesh({
       bumpMap.needsUpdate = true;
     }
   }, [moonTexture, bumpMap, gl]);
-
-  // Natural axial rotation
-  useFrame((_, delta) => {
-    if (sphereRef.current) {
-      sphereRef.current.rotation.y += delta * 0.008;
-    }
-  });
 
   // Click detector for custom coordinates
   const handleSphereClick = (e) => {
@@ -180,15 +166,13 @@ function PhotorealisticMoonMesh({
       <mesh
         ref={sphereRef}
         onClick={handleSphereClick}
-        rotation={[0.1, 0.4, 0]}
       >
-        <sphereGeometry args={[MOON_RADIUS, 256, 256]} />
+        <sphereGeometry args={[MOON_RADIUS, 128, 96]} />
         <meshStandardMaterial
           map={moonTexture}
           bumpMap={bumpMap}
-          bumpScale={0.12}
-          roughness={0.88}
-          metalness={0.03}
+          bumpScale={0.16}
+          roughness={1}
         />
 
         {/* Claimed Plot Flag Markers */}
@@ -266,16 +250,6 @@ function PhotorealisticMoonMesh({
       {/* Sq Ft Division Overlay */}
       <SqFtGridOverlay showGrid={showGrid} />
 
-      {/* Outer Rim Glow Ring */}
-      <mesh>
-        <sphereGeometry args={[MOON_RADIUS * 1.008, 64, 64]} />
-        <meshBasicMaterial
-          color="#a0c4ff"
-          side={THREE.BackSide}
-          transparent
-          opacity={0.05}
-        />
-      </mesh>
     </group>
   );
 }
@@ -301,9 +275,9 @@ export default function MoonGlobe({
           powerPreference: 'high-performance'
         }}
       >
-        <ambientLight intensity={0.22} />
-        <directionalLight position={[16, 12, 14]} intensity={2.0} color="#ffffff" />
-        <directionalLight position={[-16, -8, -10]} intensity={0.25} color="#38bdf8" />
+        <ambientLight intensity={0.42} />
+        <directionalLight position={[16, 12, 14]} intensity={2.6} color="#fff4e5" />
+        <directionalLight position={[-16, -8, -10]} intensity={0.32} color="#dbe7ff" />
         
         <Stars radius={140} depth={60} count={2200} factor={4} saturation={0} fade speed={1} />
         
