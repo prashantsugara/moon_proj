@@ -24,39 +24,59 @@ function positionPlotLabel(object, camera, size) {
 const EARTH_MAP_SRC = typeof earthMapUrl === 'object' && earthMapUrl?.src ? earthMapUrl.src : (earthMapUrl || '/earth_map.jpg');
 
 const MOON_RADIUS = 3.5;
+const CLICK_TOLERANCE = 5;
 
 // Camera motion controller
 function CameraController({ targetPosition }) {
   const { camera, size } = useThree();
   const controlsRef = useRef();
+  const flightRef = useRef(null);
 
   useEffect(() => {
-    let frame;
     if (targetPosition) {
       const pos = latLngToVector3(targetPosition.lat, targetPosition.lng, MOON_RADIUS, size.width < 700 ? 9.5 : 6.6);
       const startPos = camera.position.clone();
       const startDirection = startPos.clone().normalize();
-      const turn = new THREE.Quaternion().setFromUnitVectors(startDirection, pos.clone().normalize());
-      const rotation = new THREE.Quaternion();
-      const startedAt = performance.now();
 
-      const animateCamera = () => {
-        const progress = Math.min((performance.now() - startedAt) / 500, 1);
-        const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
-        rotation.identity().slerp(turn, eased);
-        camera.position.copy(startDirection).applyQuaternion(rotation)
-          .multiplyScalar(THREE.MathUtils.lerp(startPos.length(), pos.length(), eased));
-        camera.lookAt(0, 0, 0);
-        if (progress < 1) frame = requestAnimationFrame(animateCamera);
+      // Clear residual drag momentum before giving the camera a new destination.
+      const controls = controlsRef.current;
+      if (controls) {
+        const damping = controls.enableDamping;
+        controls.enableDamping = false;
+        controls.update();
+        camera.position.copy(startPos);
+        controls.enableDamping = damping;
+        controls.update();
+      }
+
+      flightRef.current = {
+        startDirection,
+        startRadius: startPos.length(),
+        endRadius: pos.length(),
+        turn: new THREE.Quaternion().setFromUnitVectors(startDirection, pos.clone().normalize()),
+        rotation: new THREE.Quaternion(),
+        startedAt: performance.now(),
       };
-      animateCamera();
     }
-    return () => cancelAnimationFrame(frame);
+    return () => { flightRef.current = null; };
   }, [targetPosition, camera, size.width]);
+
+  // Run before OrbitControls so both use the same camera pose each frame.
+  useFrame(() => {
+    const flight = flightRef.current;
+    if (!flight) return;
+    const progress = Math.min((performance.now() - flight.startedAt) / 500, 1);
+    const eased = THREE.MathUtils.smoothstep(progress, 0, 1);
+    flight.rotation.identity().slerp(flight.turn, eased);
+    camera.position.copy(flight.startDirection).applyQuaternion(flight.rotation)
+      .multiplyScalar(THREE.MathUtils.lerp(flight.startRadius, flight.endRadius, eased));
+    if (progress === 1) flightRef.current = null;
+  }, -2);
 
   return (
     <OrbitControls
       ref={controlsRef}
+      onStart={() => { flightRef.current = null; }}
       enablePan={false}
       minDistance={4.2}
       maxDistance={15}
@@ -154,7 +174,7 @@ function PhotorealisticMoonMesh({
   // Click detector for custom coordinates
   const handleSphereClick = (e) => {
     e.stopPropagation();
-    if (!e.point) return;
+    if (e.delta > CLICK_TOLERANCE || e.button !== 0 || !e.point) return;
 
     const latLng = vector3ToLatLng(e.point, MOON_RADIUS);
     onSelectPoint({ lat: latLng.lat, lng: latLng.lng });
@@ -185,7 +205,11 @@ function PhotorealisticMoonMesh({
               key={plot.id}
               position={[pos.x, pos.y, pos.z]}
             >
-              <mesh onClick={(event) => { event.stopPropagation(); onOpenDeed(plot); }}>
+              <mesh onClick={(event) => {
+                event.stopPropagation();
+                if (event.delta > CLICK_TOLERANCE || event.button !== 0) return;
+                onOpenDeed(plot);
+              }}>
                 <sphereGeometry args={[0.04, 16, 16]} />
                 <meshBasicMaterial color="#3b82f6" />
               </mesh>
@@ -226,6 +250,7 @@ function PhotorealisticMoonMesh({
               <mesh
                 onClick={(evt) => {
                   evt.stopPropagation();
+                  if (evt.delta > CLICK_TOLERANCE || evt.button !== 0) return;
                   onSelectPoint({ lat: region.lat, lng: region.lng, region });
                 }}
               >
