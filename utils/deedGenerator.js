@@ -1,304 +1,304 @@
 import { FLAG_TEMPLATES } from '../data/lunarRegions';
 import QRCode from 'qrcode';
 
-export function getDeedUrl(id) {
-  const url = new URL('/', window.location.origin);
+export function getDeedUrl(id, origin = window.location.origin) {
+  const url = new URL('/', origin);
   url.searchParams.set('plot', id);
   return url.href;
 }
 
-export function generateDeedImage(plotData) {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return Promise.resolve('');
+export async function generateDeedImage(plotData) {
+  if (typeof document === 'undefined') return '';
+  const canvas = document.createElement('canvas');
+  await drawDeed(canvas, plotData, window.location.origin, async (src) => {
+    const image = new Image();
+    image.src = src;
+    await image.decode();
+    return image;
+  });
+  return canvas.toDataURL('image/png');
+}
 
-  return new Promise(async (resolve) => {
-    const width = 2048;
-    const height = 1448;
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
+export async function drawDeed(canvas, plotData, origin, loadFlag) {
+  const width = 2048;
+  const height = 1448;
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
 
-    // 1. Classic Off-White Parchment Paper Background
-    ctx.fillStyle = '#faf9f5';
-    ctx.fillRect(0, 0, width, height);
+  // 1. Classic Off-White Parchment Paper Background
+  ctx.fillStyle = '#faf9f5';
+  ctx.fillRect(0, 0, width, height);
 
-    // Subtle Parchment Texture Pattern
-    ctx.fillStyle = 'rgba(180, 150, 100, 0.03)';
-    for (let i = 0; i < 400; i++) {
-      const rx = Math.random() * width;
-      const ry = Math.random() * height;
-      const rw = Math.random() * 80 + 20;
-      const rh = Math.random() * 40 + 10;
-      ctx.fillRect(rx, ry, rw, rh);
+  // Subtle Parchment Texture Pattern
+  ctx.fillStyle = 'rgba(180, 150, 100, 0.03)';
+  for (let i = 0; i < 400; i++) {
+    const rx = (i * 1163) % width;
+    const ry = (i * 887) % height;
+    const rw = (i * 31) % 80 + 20;
+    const rh = (i * 17) % 40 + 10;
+    ctx.fillRect(rx, ry, rw, rh);
+  }
+
+  // Double Classic Legal Frame Border
+  // Outer Deep Navy Border
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(48, 48, width - 96, height - 96);
+
+  // Inner Gold Filigree Line
+  ctx.strokeStyle = '#b45309';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(64, 64, width - 128, height - 128);
+
+  // Fine Inner Border
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(74, 74, width - 148, height - 148);
+
+  // Corner Ornament Accents
+  const drawCornerOrnament = (cx, cy, flipX = 1, flipY = 1) => {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(flipX, flipY);
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(0, 0, 36, 4);
+    ctx.fillRect(0, 0, 4, 36);
+    ctx.fillRect(8, 8, 20, 2);
+    ctx.fillRect(8, 8, 2, 20);
+    ctx.restore();
+  };
+
+  drawCornerOrnament(78, 78, 1, 1);
+  drawCornerOrnament(width - 78, 78, -1, 1);
+  drawCornerOrnament(78, height - 78, 1, -1);
+  drawCornerOrnament(width - 78, height - 78, -1, -1);
+
+  // 2. Formal Header Section
+  ctx.textAlign = 'center';
+
+  // Issuer Subtitle
+  ctx.font = '600 20px "Georgia", "Times New Roman", serif';
+  ctx.fillStyle = '#b45309';
+  ctx.letterSpacing = '3px';
+  ctx.fillText('UNITED LUNAR LAND REGISTRY • EXTRA-TERRESTRIAL PROPERTY AUTHORITY', width / 2, 125);
+
+  // Main Certificate Title
+  ctx.font = '700 58px "Georgia", "Times New Roman", serif';
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText('COMMEMORATIVE CERTIFICATE', width / 2, 195);
+
+  // Formal Gold Line Divider with Diamond Center
+  ctx.beginPath();
+  ctx.moveTo(width / 2 - 400, 225);
+  ctx.lineTo(width / 2 + 400, 225);
+  ctx.strokeStyle = '#d97706';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#b45309';
+  ctx.beginPath();
+  ctx.arc(width / 2, 225, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3. Legal Grant Declaration
+  ctx.font = 'italic 400 22px "Georgia", "Times New Roman", serif';
+  ctx.fillStyle = '#475569';
+  ctx.fillText(
+    'BE IT KNOWN TO ALL THAT THE REAL ESTATE PARCEL HEREIN DESCRIBED HAS BEEN OFFICIALLY DULY REGISTERED TO',
+    width / 2,
+    280
+  );
+
+  // Owner Name Parchment Card
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(width / 2 - 480, 310, 960, 90);
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(width / 2 - 480, 310, 960, 90);
+
+  ctx.strokeStyle = '#b45309';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(width / 2 - 474, 316, 948, 78);
+
+  ctx.font = '700 44px "Georgia", "Times New Roman", serif';
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText(plotData.ownerName || 'UNREGISTERED CITIZEN', width / 2, 370);
+
+  // 4. Property Specifications Table
+  const startY = 440;
+  ctx.textAlign = 'left';
+
+  // Left Specifications Box
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(120, startY, 860, 500);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(120, startY, 860, 500);
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(120, startY, 860, 48);
+
+  ctx.font = '700 18px "Georgia", "Times New Roman", serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('PARCEL SPECIFICATIONS & COORDINATES', 150, startY + 30);
+
+  const specs = [
+    ['REGISTRY DEED ID', plotData.id || 'DRAFT'],
+    ['SECTOR TITLE', plotData.title || 'Lunar Sector Alpha'],
+    ['LUNAR REGION', plotData.regionName || 'Mare Tranquillitatis'],
+    ['LATITUDE', `${plotData.lat > 0 ? plotData.lat + '° N' : Math.abs(plotData.lat) + '° S'}`],
+    ['LONGITUDE', `${plotData.lng > 0 ? plotData.lng + '° E' : Math.abs(plotData.lng) + '° W'}`],
+    ['AREA SIZE', `${plotData.acres || 1} Acre(s) (${((plotData.acres || 1) * 43560).toLocaleString()} sq ft)`],
+    ['REGISTRY HASH', plotData.txHash || 'DRAFT']
+  ];
+
+  let rowY = startY + 92;
+  specs.forEach(([label, value], idx) => {
+    if (idx % 2 === 0) {
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(122, rowY - 26, 856, 46);
     }
 
-    // Double Classic Legal Frame Border
-    // Outer Deep Navy Border
-    ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 8;
-    ctx.strokeRect(48, 48, width - 96, height - 96);
+    ctx.font = '600 14px "Georgia", "Times New Roman", serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText(label, 150, rowY);
 
-    // Inner Gold Filigree Line
-    ctx.strokeStyle = '#b45309';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(64, 64, width - 128, height - 128);
+    ctx.font = '600 16px "Courier New", monospace';
+    ctx.fillStyle = label === 'REGISTRY DEED ID' ? '#b45309' : '#0f172a';
+    ctx.fillText(value, 380, rowY);
+    rowY += 48;
+  });
 
-    // Fine Inner Border
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(74, 74, width - 148, height - 148);
+  // Right Box - Emblem, Flag & Real Scannable QR Code
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(1060, startY, 860, 500);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(1060, startY, 860, 500);
 
-    // Corner Ornament Accents
-    const drawCornerOrnament = (cx, cy, flipX = 1, flipY = 1) => {
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(flipX, flipY);
-      ctx.fillStyle = '#b45309';
-      ctx.fillRect(0, 0, 36, 4);
-      ctx.fillRect(0, 0, 4, 36);
-      ctx.fillRect(8, 8, 20, 2);
-      ctx.fillRect(8, 8, 2, 20);
-      ctx.restore();
-    };
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(1060, startY, 860, 48);
 
-    drawCornerOrnament(78, 78, 1, 1);
-    drawCornerOrnament(width - 78, 78, -1, 1);
-    drawCornerOrnament(78, height - 78, 1, -1);
-    drawCornerOrnament(width - 78, height - 78, -1, -1);
+  ctx.font = '700 18px "Georgia", "Times New Roman", serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(plotData.draft ? 'CERTIFICATE PREVIEW' : 'NATIONAL EMBLEM & VERIFICATION QR', 1090, startY + 30);
 
-    // 2. Formal Header Section
-    ctx.textAlign = 'center';
+  // Custom Motto
+  ctx.font = 'italic 400 20px "Georgia", serif';
+  ctx.fillStyle = '#334155';
+  const mottoText = `"${plotData.motto || 'Per Aspera Ad Astra'}"`;
+  ctx.fillText(mottoText, 1090, startY + 90);
 
-    // Issuer Subtitle
-    ctx.font = '600 20px "Georgia", "Times New Roman", serif';
-    ctx.fillStyle = '#b45309';
-    ctx.letterSpacing = '3px';
-    ctx.fillText('UNITED LUNAR LAND REGISTRY • EXTRA-TERRESTRIAL PROPERTY AUTHORITY', width / 2, 125);
+  // Draw Flag Representation Box
+  ctx.fillStyle = '#f1f5f9';
+  ctx.fillRect(1090, startY + 130, 320, 200);
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(1090, startY + 130, 320, 200);
 
-    // Main Certificate Title
-    ctx.font = '700 58px "Georgia", "Times New Roman", serif';
-    ctx.fillStyle = '#0f172a';
-    ctx.fillText('COMMEMORATIVE CERTIFICATE', width / 2, 195);
-
-    // Formal Gold Line Divider with Diamond Center
-    ctx.beginPath();
-    ctx.moveTo(width / 2 - 400, 225);
-    ctx.lineTo(width / 2 + 400, 225);
-    ctx.strokeStyle = '#d97706';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = '#b45309';
-    ctx.beginPath();
-    ctx.arc(width / 2, 225, 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 3. Legal Grant Declaration
-    ctx.font = 'italic 400 22px "Georgia", "Times New Roman", serif';
-    ctx.fillStyle = '#475569';
-    ctx.fillText(
-      'BE IT KNOWN TO ALL THAT THE REAL ESTATE PARCEL HEREIN DESCRIBED HAS BEEN OFFICIALLY DULY REGISTERED TO',
-      width / 2,
-      280
-    );
-
-    // Owner Name Parchment Card
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(width / 2 - 480, 310, 960, 90);
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(width / 2 - 480, 310, 960, 90);
-
-    ctx.strokeStyle = '#b45309';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(width / 2 - 474, 316, 948, 78);
-
-    ctx.font = '700 44px "Georgia", "Times New Roman", serif';
-    ctx.fillStyle = '#0f172a';
-    ctx.fillText(plotData.ownerName || 'UNREGISTERED CITIZEN', width / 2, 370);
-
-    // 4. Property Specifications Table
-    const startY = 440;
-    ctx.textAlign = 'left';
-
-    // Left Specifications Box
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(120, startY, 860, 500);
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(120, startY, 860, 500);
-
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(120, startY, 860, 48);
-
-    ctx.font = '700 18px "Georgia", "Times New Roman", serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('PARCEL SPECIFICATIONS & COORDINATES', 150, startY + 30);
-
-    const specs = [
-      ['REGISTRY DEED ID', plotData.id || 'DRAFT'],
-      ['SECTOR TITLE', plotData.title || 'Lunar Sector Alpha'],
-      ['LUNAR REGION', plotData.regionName || 'Mare Tranquillitatis'],
-      ['LATITUDE', `${plotData.lat > 0 ? plotData.lat + '° N' : Math.abs(plotData.lat) + '° S'}`],
-      ['LONGITUDE', `${plotData.lng > 0 ? plotData.lng + '° E' : Math.abs(plotData.lng) + '° W'}`],
-      ['AREA SIZE', `${plotData.acres || 1} Acre(s) (${((plotData.acres || 1) * 43560).toLocaleString()} sq ft)`],
-      ['REGISTRY HASH', plotData.txHash || 'DRAFT']
-    ];
-
-    let rowY = startY + 92;
-    specs.forEach(([label, value], idx) => {
-      if (idx % 2 === 0) {
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(122, rowY - 26, 856, 46);
-      }
-
-      ctx.font = '600 14px "Georgia", "Times New Roman", serif';
-      ctx.fillStyle = '#64748b';
-      ctx.fillText(label, 150, rowY);
-
-      ctx.font = '600 16px "Courier New", monospace';
-      ctx.fillStyle = label === 'REGISTRY DEED ID' ? '#b45309' : '#0f172a';
-      ctx.fillText(value, 380, rowY);
-      rowY += 48;
-    });
-
-    // Right Box - Emblem, Flag & Real Scannable QR Code
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(1060, startY, 860, 500);
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(1060, startY, 860, 500);
-
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(1060, startY, 860, 48);
-
-    ctx.font = '700 18px "Georgia", "Times New Roman", serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(plotData.draft ? 'CERTIFICATE PREVIEW' : 'NATIONAL EMBLEM & VERIFICATION QR', 1090, startY + 30);
-
-    // Custom Motto
-    ctx.font = 'italic 400 20px "Georgia", serif';
-    ctx.fillStyle = '#334155';
-    const mottoText = `"${plotData.motto || 'Per Aspera Ad Astra'}"`;
-    ctx.fillText(mottoText, 1090, startY + 90);
-
-    // Draw Flag Representation Box
-    ctx.fillStyle = '#f1f5f9';
-    ctx.fillRect(1090, startY + 130, 320, 200);
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(1090, startY + 130, 320, 200);
-
-    const flag = FLAG_TEMPLATES.find((item) => item.id === plotData.flagId)
-      ?? FLAG_TEMPLATES.find((item) => item.symbol === plotData.flagSymbol);
-    if (flag?.image) {
-      const image = new Image();
-      image.src = flag.image;
-      try {
-        await image.decode();
-        const scale = Math.min(316 / image.naturalWidth, 196 / image.naturalHeight);
-        const w = image.naturalWidth * scale;
-        const h = image.naturalHeight * scale;
-        ctx.drawImage(image, 1250 - w / 2, startY + 230 - h / 2, w, h);
-      } catch {
-        ctx.fillStyle = '#0f172a';
-        ctx.fillText(flag.name, 1105, startY + 235);
-      }
-    } else {
+  const flag = FLAG_TEMPLATES.find((item) => item.id === plotData.flagId)
+    ?? FLAG_TEMPLATES.find((item) => item.symbol === plotData.flagSymbol);
+  if (flag?.image) {
+    try {
+      const image = await loadFlag(flag.image);
+      const scale = Math.min(316 / image.naturalWidth, 196 / image.naturalHeight);
+      const w = image.naturalWidth * scale;
+      const h = image.naturalHeight * scale;
+      ctx.drawImage(image, 1250 - w / 2, startY + 230 - h / 2, w, h);
+    } catch {
       ctx.fillStyle = '#0f172a';
-      ctx.fillText(flag?.name ?? 'Lunar Registry', 1105, startY + 235);
+      ctx.fillText(flag.name, 1105, startY + 235);
     }
+  } else {
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText(flag?.name ?? 'Lunar Registry', 1105, startY + 235);
+  }
 
-    if (!plotData.draft) {
-      // REAL SCANNABLE QR CODE GENERATION
-      const verifyUrl = getDeedUrl(plotData.id);
-      const qrCanvas = document.createElement('canvas');
-      try {
-        await QRCode.toCanvas(qrCanvas, verifyUrl, {
-          width: 240,
-          margin: 4,
-          color: { dark: '#0f172a', light: '#ffffff' }
-        });
-        ctx.drawImage(qrCanvas, 1460, startY + 130, 240, 240);
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(1460, startY + 130, 240, 240);
-    } catch (e) {
-      console.error('QR generation error:', e);
+  if (!plotData.draft) {
+    // REAL SCANNABLE QR CODE GENERATION
+    const { modules } = QRCode.create(getDeedUrl(plotData.id, origin));
+    const moduleSize = Math.floor(240 / (modules.size + 8));
+    const qrY = startY + 130;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(1460, qrY, 240, 240);
+    ctx.fillStyle = '#0f172a';
+    for (let row = 0; row < modules.size; row++) {
+      for (let col = 0; col < modules.size; col++) {
+        if (modules.get(row, col)) {
+          ctx.fillRect(1460 + (col + 4) * moduleSize, qrY + (row + 4) * moduleSize, moduleSize, moduleSize);
+        }
+      }
     }
-
     ctx.font = '600 13px "Courier New", monospace';
     ctx.fillStyle = '#64748b';
     ctx.fillText('SCAN QR TO VIEW DEED', 1460, startY + 395);
-    }
+  }
 
-    // 5. Official Gold Embossed Seal & Signatures Footer
-    const footerY = 980;
+  // 5. Official Gold Embossed Seal & Signatures Footer
+  const footerY = 980;
 
-    // Gold Metallic Embossed Seal (Left)
-    const sealX = 260;
-    const sealY = footerY + 180;
-    const sealRadius = 90;
+  // Gold Metallic Embossed Seal (Left)
+  const sealX = 260;
+  const sealY = footerY + 180;
+  const sealRadius = 90;
 
-    const goldGrad = ctx.createRadialGradient(sealX - 20, sealY - 20, 10, sealX, sealY, sealRadius);
-    goldGrad.addColorStop(0, '#fef08a');
-    goldGrad.addColorStop(0.4, '#eab308');
-    goldGrad.addColorStop(0.8, '#ca8a04');
-    goldGrad.addColorStop(1, '#854d0e');
+  const goldGrad = ctx.createRadialGradient(sealX - 20, sealY - 20, 10, sealX, sealY, sealRadius);
+  goldGrad.addColorStop(0, '#fef08a');
+  goldGrad.addColorStop(0.4, '#eab308');
+  goldGrad.addColorStop(0.8, '#ca8a04');
+  goldGrad.addColorStop(1, '#854d0e');
 
-    ctx.fillStyle = goldGrad;
-    ctx.beginPath();
-    ctx.arc(sealX, sealY, sealRadius, 0, Math.PI * 2);
-    ctx.fill();
+  ctx.fillStyle = goldGrad;
+  ctx.beginPath();
+  ctx.arc(sealX, sealY, sealRadius, 0, Math.PI * 2);
+  ctx.fill();
 
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 4;
-    ctx.stroke();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 4;
+  ctx.stroke();
 
-    ctx.font = '700 13px "Georgia", serif';
-    ctx.fillStyle = '#422006';
-    ctx.textAlign = 'center';
-    ctx.fillText('★ COMMEMORATIVE SEAL ★', sealX, sealY - 25);
-    ctx.font = '700 32px sans-serif';
-    ctx.fillText('🌕', sealX, sealY + 12);
-    ctx.font = '700 12px "Georgia", serif';
-    ctx.fillText('LUNAR REGISTRY', sealX, sealY + 45);
+  ctx.font = '700 13px "Georgia", serif';
+  ctx.fillStyle = '#422006';
+  ctx.textAlign = 'center';
+  ctx.fillText('★ COMMEMORATIVE SEAL ★', sealX, sealY - 25);
+  ctx.font = '700 32px sans-serif';
+  ctx.fillText('🌕', sealX, sealY + 12);
+  ctx.font = '700 12px "Georgia", serif';
+  ctx.fillText('LUNAR REGISTRY', sealX, sealY + 45);
 
-    // Middle Signature Line
-    ctx.textAlign = 'center';
-    ctx.strokeStyle = '#94a3b8';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(700, footerY + 210);
-    ctx.lineTo(1200, footerY + 210);
-    ctx.stroke();
+  // Middle Signature Line
+  ctx.textAlign = 'center';
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(700, footerY + 210);
+  ctx.lineTo(1200, footerY + 210);
+  ctx.stroke();
 
-    ctx.font = 'italic 700 32px "Georgia", serif';
-    ctx.fillStyle = '#0f172a';
-    ctx.fillText('Commander V. Vance', 950, footerY + 195);
+  ctx.font = 'italic 700 32px "Georgia", serif';
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText('Commander V. Vance', 950, footerY + 195);
 
-    ctx.font = '600 16px "Georgia", serif';
-    ctx.fillStyle = '#64748b';
-    ctx.fillText('HIGH COMMISSIONER OF EXTRA-TERRESTRIAL LANDS', 950, footerY + 240);
+  ctx.font = '600 16px "Georgia", serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('HIGH COMMISSIONER OF EXTRA-TERRESTRIAL LANDS', 950, footerY + 240);
 
-    // Right Issue Timestamp & Auth Code
-    ctx.textAlign = 'right';
-    ctx.font = '600 16px "Courier New", monospace';
-    ctx.fillStyle = '#64748b';
-    ctx.fillText(`DATE OF ISSUANCE: ${new Date(plotData.claimedAt || Date.now()).toISOString().split('T')[0]}`, width - 140, footerY + 180);
-    ctx.fillText(`STATUS: ${plotData.draft ? "UNSAVED PREVIEW" : "COMMEMORATIVE"}`, width - 140, footerY + 215);
-    ctx.fillStyle = '#b45309';
-    ctx.fillText(`SECURITY TOKEN: REG-RSA-4096-VERIFIED`, width - 140, footerY + 250);
+  // Right Issue Timestamp & Auth Code
+  ctx.textAlign = 'right';
+  ctx.font = '600 16px "Courier New", monospace';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText(`DATE OF ISSUANCE: ${new Date(plotData.claimedAt || Date.now()).toISOString().split('T')[0]}`, width - 140, footerY + 180);
+  ctx.fillText(`STATUS: ${plotData.draft ? "UNSAVED PREVIEW" : "COMMEMORATIVE"}`, width - 140, footerY + 215);
+  ctx.fillStyle = '#b45309';
+  ctx.fillText(`SECURITY TOKEN: REG-RSA-4096-VERIFIED`, width - 140, footerY + 250);
 
-    // Fine Print Legal Disclaimer Line
-    ctx.textAlign = 'center';
-    ctx.font = '500 12px "Georgia", serif';
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillText('COMMEMORATIVE CERTIFICATE ONLY. CONFERS NO LEGAL RIGHTS TO LUNAR LAND.', width / 2, height - 60);
+  // Fine Print Legal Disclaimer Line
+  ctx.textAlign = 'center';
+  ctx.font = '500 12px "Georgia", serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('COMMEMORATIVE CERTIFICATE ONLY. CONFERS NO LEGAL RIGHTS TO LUNAR LAND.', width / 2, height - 60);
 
-    // Resolve Data URL
-    resolve(canvas.toDataURL('image/png'));
-  });
 }
 
 export function downloadDeedPNG(plotData) {

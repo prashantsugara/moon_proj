@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { paymentAdmin } from '@/lib/paymentAdmin';
 import { whopRequest, whopSandbox } from '@/lib/whop';
 import { reportRegistrationPurchase } from '@/lib/openaiAds';
+import { sendDeedEmail } from '@/lib/deedEmail';
 
 export async function POST(request: Request) {
   const secret = process.env.WHOP_WEBHOOK_SECRET;
@@ -49,7 +50,8 @@ export async function POST(request: Request) {
         !/^ch_[a-zA-Z0-9]+$/.test(payment.checkout_configuration_id)) {
       return Response.json({ received: true });
     }
-    const { data, error } = await paymentAdmin().rpc(isTransfer ? 'lunar_finalize_whop_sale' : 'lunar_finalize_registration', {
+    const admin = paymentAdmin();
+    const { data, error } = await admin.rpc(isTransfer ? 'lunar_finalize_whop_sale' : 'lunar_finalize_registration', {
       p_order: payment.checkout_configuration_id, p_payment: paymentId, p_amount: amount, p_currency: 'USD', ...(isTransfer ? { p_seller: payment.account_id } : {}),
     });
     if (error) throw error;
@@ -61,6 +63,7 @@ export async function POST(request: Request) {
     if (!isTransfer && !whopSandbox()) {
       await reportRegistrationPurchase(paymentId, amount, payment.metadata?.oppref);
     }
+    if (!isTransfer) await sendDeedEmail(admin, paymentId);
     return Response.json({ received: true });
   } catch (error) {
     console.error('Whop webhook processing failed', error);
