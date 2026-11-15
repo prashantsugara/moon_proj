@@ -1,5 +1,5 @@
 import { REGISTRATION_PRICES, formatRegistrationPrice } from '@/lib/registrationPrice';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Shield, Flag, CheckCircle2, Loader2, Award, Zap } from 'lucide-react';
 import { FLAG_TEMPLATES } from '../data/lunarRegions';
 import { generateDeedImage } from '../utils/deedGenerator';
@@ -25,6 +25,11 @@ export default function PlotClaimModal({
   const [previewing, setPreviewing] = useState(!!initialDraft);
   const [flagSearch, setFlagSearch] = useState('');
   const [preview, setPreview] = useState(null);
+  const modalRef = useRef(null);
+  useEffect(() => {
+    if (modalRef.current) modalRef.current.scrollTop = 0;
+  }, [previewing]);
+
   useEffect(() => {
     if (!previewing || !isOpen || hidden) return;
     let current = true;
@@ -85,7 +90,7 @@ export default function PlotClaimModal({
 
   return (
     <div className="modal-backdrop" onClick={isProcessing ? undefined : onClose}>
-      <div className="modal-container glass-card" onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} className="modal-container glass-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title">
             <Sparkles size={20} color="var(--accent)" />
@@ -101,9 +106,9 @@ export default function PlotClaimModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmitClaim} className="modal-body">
+        <form onSubmit={handleSubmitClaim} className={previewing ? 'modal-body certificate-preview' : 'modal-body'}>
           {previewing ? <div className="form-column">
-            {preview ? <img src={preview} alt="Your commemorative lunar certificate preview" style={{ width: '100%' }} />
+            {preview ? <img className="certificate-preview-image" src={preview} alt="Your commemorative lunar certificate preview" />
               : <p>{plotTitle} · {ownerName} · {sqftOption.toLocaleString()} sq ft</p>}
             <button className="btn-ghost" type="button" disabled={isProcessing} onClick={() => setPreviewing(false)}>Edit details</button>
           </div> : <div className="form-column">
@@ -280,11 +285,22 @@ export default function PlotClaimModal({
 
         .modal-body {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
           gap: 24px;
         }
 
+        .certificate-preview {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .certificate-preview-image {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+
         .form-column {
+          min-width: 0;
           display: flex;
           flex-direction: column;
           gap: 16px;
@@ -304,6 +320,7 @@ export default function PlotClaimModal({
         }
 
         .form-group input {
+          min-width: 0;
           background: rgba(255, 255, 255, 0.05);
           border: 1px solid var(--border-subtle);
           padding: 10px 12px;
@@ -325,7 +342,7 @@ export default function PlotClaimModal({
 
         .sqft-picker-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
         }
 
@@ -356,6 +373,7 @@ export default function PlotClaimModal({
         }
 
         .preset-label {
+          overflow-wrap: anywhere;
           font-family: var(--font-sans);
           font-size: 12px;
           font-weight: 500;
@@ -375,11 +393,12 @@ export default function PlotClaimModal({
 
         .flags-grid {
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
           gap: 8px;
         }
 
         .flag-item {
+          min-width: 0;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -545,7 +564,7 @@ export default function PlotClaimModal({
         }
 
         @media (max-width: 768px) {
-          .modal-body { grid-template-columns: 1fr; }
+          .modal-body { grid-template-columns: minmax(0, 1fr); }
         }
       `}</style>
     </div>
