@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, Share2, Globe, Check, Award, ShieldCheck } from 'lucide-react';
-import { generateDeedImage, downloadDeedPNG, downloadDeedPDF } from '../utils/deedGenerator';
+import { generateDeedImage, getDeedUrl, downloadDeedPNG, downloadDeedPDF } from '../utils/deedGenerator';
 
 export default function DeedCertificateModal({
   isOpen,
@@ -22,7 +22,7 @@ export default function DeedCertificateModal({
   if (!isOpen || !plotData) return null;
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}?plot=${plotData.id}`;
+    const url = getDeedUrl(plotData.id);
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);

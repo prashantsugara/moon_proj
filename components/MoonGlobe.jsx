@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Stars, useTexture } from '@react-three/drei';
+import { Html, OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { createProceduralBumpMap, latLngToVector3, vector3ToLatLng } from '../utils/textureGenerator';
 
@@ -118,6 +118,7 @@ function PhotorealisticMoonMesh({
   activeCoordinates,
   presetRegions,
   claimedPlots,
+  onOpenDeed,
   selectedRegion,
   showGrid
 }) {
@@ -187,10 +188,24 @@ function PhotorealisticMoonMesh({
               key={plot.id}
               position={[pos.x, pos.y, pos.z]}
             >
-              <mesh>
+              <mesh onClick={(event) => { event.stopPropagation(); onOpenDeed(plot); }}>
                 <sphereGeometry args={[0.04, 16, 16]} />
                 <meshBasicMaterial color="#3b82f6" />
               </mesh>
+              <Html position={pos.clone().normalize().multiplyScalar(0.06)} center occlude={[sphereRef]} zIndexRange={[5, 0]}>
+                <button
+                  type="button"
+                  className="moon-plot-label"
+                  aria-label={`View deed for ${plot.title}`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenDeed(plot);
+                  }}
+                >
+                  {plot.title}
+                </button>
+              </Html>
             </group>
           );
         })}
@@ -251,6 +266,7 @@ export default function MoonGlobe({
   activeCoordinates,
   presetRegions,
   claimedPlots,
+  onOpenDeed,
   selectedRegion,
   showGrid
 }) {
@@ -279,6 +295,7 @@ export default function MoonGlobe({
             activeCoordinates={activeCoordinates}
             presetRegions={presetRegions}
             claimedPlots={claimedPlots}
+            onOpenDeed={onOpenDeed}
             selectedRegion={selectedRegion}
             showGrid={showGrid}
           />
@@ -288,6 +305,26 @@ export default function MoonGlobe({
       </Canvas>
 
       <style>{`
+        .moon-plot-label {
+          transform: translateY(-75%);
+          max-width: 150px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          border: 1px solid #60a5fa;
+          border-radius: 5px;
+          background: #0f172a;
+          color: #fff;
+          cursor: pointer;
+          padding: 4px 8px;
+          font-size: 12px;
+        }
+
+        .moon-plot-label:hover,
+        .moon-plot-label:focus-visible {
+          background: #1d4ed8;
+        }
+
         .moon-canvas-wrapper {
           width: 100%;
           height: 100%;

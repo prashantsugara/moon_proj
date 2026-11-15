@@ -284,6 +284,7 @@ function HomeContent() {
         activeCoordinates={activeCoordinates}
         presetRegions={filteredRegions}
         claimedPlots={claimedPlots}
+        onOpenDeed={setActiveDeedPlot}
         selectedRegion={selectedRegion}
         showGrid={showGrid}
       />
@@ -347,6 +348,7 @@ function HomeContent() {
       />
 
       <DeedCertificateModal
+        key={activeDeedPlot?.id}
         isOpen={!!activeDeedPlot}
         onClose={() => setActiveDeedPlot(null)}
         plotData={activeDeedPlot}

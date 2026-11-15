@@ -1,6 +1,12 @@
 import { FLAG_TEMPLATES } from '../data/lunarRegions';
 import QRCode from 'qrcode';
 
+export function getDeedUrl(id) {
+  const url = new URL('/', window.location.origin);
+  url.searchParams.set('plot', id);
+  return url.href;
+}
+
 export function generateDeedImage(plotData) {
   if (typeof window === 'undefined' || typeof document === 'undefined') return Promise.resolve('');
 
@@ -205,25 +211,25 @@ export function generateDeedImage(plotData) {
 
     if (!plotData.draft) {
       // REAL SCANNABLE QR CODE GENERATION
-      const verifyUrl = `${window.location.origin}/?plot=${plotData.id || 'DEED'}`;
+      const verifyUrl = getDeedUrl(plotData.id);
       const qrCanvas = document.createElement('canvas');
       try {
         await QRCode.toCanvas(qrCanvas, verifyUrl, {
-          width: 200,
-          margin: 1,
+          width: 240,
+          margin: 4,
           color: { dark: '#0f172a', light: '#ffffff' }
         });
-        ctx.drawImage(qrCanvas, 1460, startY + 130, 200, 200);
+        ctx.drawImage(qrCanvas, 1460, startY + 130, 240, 240);
         ctx.strokeStyle = '#cbd5e1';
         ctx.lineWidth = 1;
-        ctx.strokeRect(1460, startY + 130, 200, 200);
+        ctx.strokeRect(1460, startY + 130, 240, 240);
     } catch (e) {
       console.error('QR generation error:', e);
     }
 
     ctx.font = '600 13px "Courier New", monospace';
     ctx.fillStyle = '#64748b';
-    ctx.fillText('SCAN QR TO VERIFY DEED', 1460, startY + 355);
+    ctx.fillText('SCAN QR TO VIEW DEED', 1460, startY + 395);
     }
 
     // 5. Official Gold Embossed Seal & Signatures Footer
