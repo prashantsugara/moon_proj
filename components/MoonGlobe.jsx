@@ -7,6 +7,19 @@ import { createProceduralBumpMap, latLngToVector3, vector3ToLatLng } from '../ut
 import moonMapUrl from '../assets/moon_map.jpg';
 import earthMapUrl from '../assets/earth_map.jpg';
 
+const projectedPlot = new THREE.Vector3();
+
+function positionPlotLabel(object, camera, size) {
+  projectedPlot.setFromMatrixPosition(object.matrixWorld).project(camera);
+  const x = (projectedPlot.x + 1) * size.width / 2;
+  const y = (1 - projectedPlot.y) * size.height / 2;
+  const headerBottom = document.querySelector('.header-console')?.getBoundingClientRect().bottom ?? 0;
+  return [
+    THREE.MathUtils.clamp(x, 82, size.width - 82),
+    THREE.MathUtils.clamp(y, headerBottom - size.top + 40, size.height - 14)
+  ];
+}
+
 const MOON_MAP_SRC = typeof moonMapUrl === 'object' && moonMapUrl?.src ? moonMapUrl.src : (moonMapUrl || '/moon_map.jpg');
 const EARTH_MAP_SRC = typeof earthMapUrl === 'object' && earthMapUrl?.src ? earthMapUrl.src : (earthMapUrl || '/earth_map.jpg');
 
@@ -192,7 +205,13 @@ function PhotorealisticMoonMesh({
                 <sphereGeometry args={[0.04, 16, 16]} />
                 <meshBasicMaterial color="#3b82f6" />
               </mesh>
-              <Html position={pos.clone().normalize().multiplyScalar(0.06)} center occlude={[sphereRef]} zIndexRange={[5, 0]}>
+              <Html
+                position={pos.clone().normalize().multiplyScalar(0.06)}
+                calculatePosition={positionPlotLabel}
+                center
+                occlude={[sphereRef]}
+                zIndexRange={[5, 0]}
+              >
                 <button
                   type="button"
                   className="moon-plot-label"
