@@ -42,6 +42,6 @@ For Whop auction settlement, apply whop_marketplace.sql after marketplace.sql an
 
 ### Deed delivery by email
 
-Apply `deed_email.sql` after the registration migrations. Set `RESEND_API_KEY`, `DEED_EMAIL_FROM` to an address on a verified Resend sending domain, and `DEED_EMAIL_SITE_URL` to the public site origin. Set `DEED_EMAIL_ENABLED=true` and redeploy. On Whop Sandbox, set `DEED_EMAIL_TEST_TO` to the inbox that should receive test certificates. Live registrations use the verified email of the MoonLandBuy account that registered the deed.
+Apply `deed_email.sql` after the registration migrations. Set `RESEND_API_KEY`, `DEED_EMAIL_FROM` to an address on a verified Resend sending domain, and `DEED_EMAIL_SITE_URL` to the public site origin. Set `DEED_EMAIL_ENABLED=true` and redeploy. Deed emails go to the Whop checkout address and privately copy the verified MoonLandBuy login address if it differs. Use an inbox you control at checkout when testing in Whop Sandbox.
 
 After a Whop registration is finalized, MoonLandBuy sends the issued certificate as a PDF and PNG. Both files contain a QR code linking to the online deed. Check that a new sandbox registration delivers both files and that replaying its webhook does not send another email. Existing registrations are not automatically backfilled.

@@ -4,16 +4,21 @@ import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { jsPDF } from 'jspdf';
 import { drawDeed, getDeedUrl } from '@/utils/deedGenerator';
 import { paymentAdmin } from '@/lib/paymentAdmin';
-import { whopSandbox } from '@/lib/whop';
 
-export async function sendDeedEmail(admin: ReturnType<typeof paymentAdmin>, paymentId: string) {
+function validEmail(value: unknown) {
+  const email = typeof value === 'string' ? value.trim() : '';
+  return /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email) ? email : undefined;
+}
+
+export async function sendDeedEmail(
+  admin: ReturnType<typeof paymentAdmin>, paymentId: string, checkoutEmail: unknown
+) {
   if (process.env.DEED_EMAIL_ENABLED !== 'true') return;
 
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.DEED_EMAIL_FROM;
   const siteUrl = process.env.DEED_EMAIL_SITE_URL;
-  const testRecipient = process.env.DEED_EMAIL_TEST_TO;
-  if (!apiKey || !from || !siteUrl || (whopSandbox() && !testRecipient)) {
+  if (!apiKey || !from || !siteUrl) {
     throw new Error('Deed email configuration is incomplete');
   }
 
@@ -27,13 +32,12 @@ export async function sendDeedEmail(admin: ReturnType<typeof paymentAdmin>, paym
     .eq('id', order.claim_id).single();
   if (deedError) throw deedError;
 
-  let recipient = testRecipient;
-  if (!whopSandbox()) {
-    const { data, error } = await admin.auth.admin.getUserById(order.account_id);
-    if (error) throw error;
-    recipient = data.user?.email_confirmed_at ? data.user.email : undefined;
-  }
+  const { data, error } = await admin.auth.admin.getUserById(order.account_id);
+  if (error) throw error;
+  const loginEmail = data.user?.email_confirmed_at ? validEmail(data.user.email) : undefined;
+  const recipient = validEmail(checkoutEmail) ?? loginEmail;
   if (!recipient) throw new Error('Deed email recipient is unavailable');
+  const copy = loginEmail && loginEmail.toLowerCase() !== recipient.toLowerCase() ? [loginEmail] : undefined;
 
   const canvas = createCanvas(2048, 1448);
   const claimedAt = new Date(deed.created_at);
@@ -58,6 +62,7 @@ export async function sendDeedEmail(admin: ReturnType<typeof paymentAdmin>, paym
     body: JSON.stringify({
       from,
       to: [recipient],
+      bcc: copy,
       subject: 'Your lunar deed is ready',
       text: 'Your commemorative MoonLandBuy certificate is attached as a PDF and a PNG. View it online at '
         + getDeedUrl(deed.id, siteUrl),

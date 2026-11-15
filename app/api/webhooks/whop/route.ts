@@ -63,7 +63,11 @@ export async function POST(request: Request) {
     if (!isTransfer && !whopSandbox()) {
       await reportRegistrationPurchase(paymentId, amount, payment.metadata?.oppref);
     }
-    if (!isTransfer) await sendDeedEmail(admin, paymentId);
+    if (!isTransfer) {
+      const checkoutEmail = payment.customer_email ?? payment.user?.email ??
+        event.data?.customer_email ?? event.data?.user?.email;
+      await sendDeedEmail(admin, paymentId, checkoutEmail);
+    }
     return Response.json({ received: true });
   } catch (error) {
     console.error('Whop webhook processing failed', error);
