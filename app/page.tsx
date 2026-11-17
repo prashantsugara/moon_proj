@@ -164,6 +164,35 @@ function HomeContent() {
     if (user) setIsAuthOpen(false);
   }, [user?.id]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = params.get('payment_id') ?? params.get('receipt_id');
+    if (params.get('registration') !== 'whop' || !paymentId || !session?.access_token) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let attempts = 0;
+    const key = 'moonlandbuy.meta.purchase.' + paymentId;
+    const verify = async () => {
+      try {
+        if (localStorage.getItem(key)) return;
+        const response = await fetch('/api/meta/purchase', { method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+          body: JSON.stringify({ paymentId }) });
+        const result = await response.json();
+        if (stopped) return;
+        const fbq = (window as any).fbq;
+        if (result.confirmed && typeof fbq === 'function') {
+          fbq('track', 'Purchase', { value: result.value, currency: result.currency }, { eventID: result.eventId });
+          localStorage.setItem(key, '1');
+          return;
+        }
+      } catch { /* Tracking must never interrupt certificate delivery. */ }
+      if (!stopped && ++attempts < 30) timer = setTimeout(verify, 2000);
+    };
+    void verify();
+    return () => { stopped = true; clearTimeout(timer); };
+  }, [session?.access_token]);
+
   const refreshClaims = async () => {
     const { data, error } = await supabase.from('lunar_claims').select('*').order('created_at', { ascending: false });
     if (error) throw error;
@@ -290,9 +319,15 @@ function HomeContent() {
       />
 
       {!exploring && <section className="explore-intro" aria-labelledby="explore-title">
-        <h1 id="explore-title">Pick a spot on the Moon.</h1>
-        <p>Preview your commemorative certificate. Registration starts at {REGISTRATION_PRICE}.</p>
-        <button className="btn-primary" type="button" onClick={() => setExploring(true)}>Explore the Moon</button>
+        <span className="gift-eyebrow">For birthdays, anniversaries & space lovers</span>
+        <h1 id="explore-title">A little Moon.<br />A lot of meaning.</h1>
+        <p>Choose a lunar spot, add their name and a personal message, and create a commemorative certificate to keep.</p>
+        <ol className="gift-steps" aria-label="How it works">
+          <li>Choose a spot</li><li>Make it personal</li><li>Preview your certificate</li>
+        </ol>
+        <button className="btn-primary" type="button" onClick={() => setExploring(true)}>Choose their Moon spot</button>
+        <p className="gift-delivery">From {REGISTRATION_PRICE} · PDF + PNG by email after payment confirmation.</p>
+        <p className="gift-disclosure">A symbolic gift. This commemorative certificate grants no legal ownership of lunar land.</p>
       </section>}
       {exploring && <TelemetryBar
         activeCoordinates={activeCoordinates}
@@ -365,6 +400,11 @@ function HomeContent() {
         .explore-intro { position: absolute; z-index: 55; left: clamp(16px, 5vw, 80px); bottom: 8%; width: min(440px, calc(100% - 32px)); padding: 24px; border-radius: 20px; background: #080f1de8; border: 1px solid #26364e; }
         .explore-intro h1 { font-size: clamp(28px, 5vw, 54px); line-height: 1.04; margin: 0; }
         .explore-intro p { color: #b6c6dc; margin: 14px 0 20px; }
+        .gift-eyebrow { display: block; color: #bfdbfe; font-size: 12px; margin-bottom: 12px; }
+        .gift-steps { display: flex; flex-wrap: wrap; gap: 8px 20px; padding-left: 18px; margin: 0 0 20px; color: #dbe7f7; font-size: 12px; }
+        .explore-intro .gift-delivery { font-size: 12px; line-height: 1.5; margin: 14px 0 8px; }
+        .explore-intro .gift-disclosure { font-size: 11px; line-height: 1.5; margin: 0; color: #a7b7cd; }
+        @media (max-height: 700px) { .explore-intro { max-height: calc(100dvh - 190px); overflow-y: auto; bottom: 12px; } .explore-intro h1 { font-size: 30px; } }
         @media (max-width: 600px) { .explore-intro { bottom: max(12px, env(safe-area-inset-bottom)); padding: 16px; } }
       `}</style>
     </main>
